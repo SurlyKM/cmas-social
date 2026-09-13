@@ -409,6 +409,20 @@ input,select,textarea,button{font-family:var(--font)}
 .toast{position:fixed;bottom:calc(80px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface-3);color:var(--text);padding:11px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* Multi-day */
+.multiday-row{margin-top:10px}
+.multiday-toggle{display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-dim);font:600 13px var(--font);cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
+.multiday-toggle.on{color:var(--text);border-color:var(--primary)}
+.multiday-check{width:20px;height:20px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;color:transparent;flex-shrink:0;transition:all .15s}
+.multiday-check svg{width:13px;height:13px}
+.multiday-toggle.on .multiday-check{background:var(--primary);border-color:var(--primary);color:#fff}
+.span-badge{font-size:10px;padding:1px 7px;border-radius:8px;background:var(--accent-dim);color:var(--accent);font-weight:700;flex-shrink:0}
+/* Multi-day continuation bars in month cells */
+.month-ev.span-mid{border-radius:0}
+.month-ev.span-start{border-radius:3px 0 0 3px}
+.month-ev.span-end{border-radius:0 3px 3px 0}
+.week-day-dot.multi{width:14px;border-radius:3px}
+
 /* Section tabs inside plans screen */
 .section-tabs{display:flex;gap:2px;padding:0 12px 8px;background:var(--bg)}
 .section-tab{padding:6px 14px;border:none;border-radius:8px;background:none;color:var(--text-faint);font:500 13px var(--font);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
@@ -660,7 +674,19 @@ input,select,textarea,button{font-family:var(--font)}
       <div class="field">
         <label>When</label>
         <div class="date-chips" id="ev-date-chips"></div>
-        <input id="ev-date" type="date" style="margin-top:6px">
+        <input id="ev-date" type="date" style="margin-top:6px" onchange="onStartDateChange()">
+        <div class="multiday-row">
+          <button class="multiday-toggle" id="ev-multiday-btn" onclick="toggleMultiDay()">
+            <span class="multiday-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span>Runs over multiple days</span>
+          </button>
+        </div>
+        <div id="ev-enddate-wrap" class="hidden" style="margin-top:8px">
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em">Ends</label>
+          <div class="date-chips" id="ev-enddate-chips"></div>
+          <input id="ev-enddate" type="date" style="margin-top:6px" onchange="updateSpanHint()">
+          <div id="ev-span-hint" style="font-size:12px;color:var(--accent);margin-top:6px;min-height:16px"></div>
+        </div>
       </div>
 
       <div class="field">
@@ -938,7 +964,7 @@ const DAY_WORDS={sunday:0,sun:0,monday:1,mon:1,tuesday:2,tue:2,tues:2,wednesday:
 function parseEventText(text){
   if(!text||!text.trim())return null;
   let working=' '+text.trim()+' ';
-  const result={title:'',date:null,time:null,location:null};
+  const result={title:'',date:null,endDate:null,time:null,location:null};
 
   // --- Location: "at X" or "@ X" (take to end of string) ---
   const locMatch=working.match(/\s(?:at|@)\s+(.+?)\s*$/i);
@@ -965,65 +991,135 @@ function parseEventText(text){
     }
   }
 
-  // --- Date ---
   const now=new Date();
   const todayDow=now.getDay();
+  const DAYRE='sunday|sun|monday|mon|tuesday|tues|tue|wednesday|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat';
 
-  // "today" / "tonight"
-  if(/\b(today|tonight)\b/i.test(working)){
-    result.date=dk(now.getFullYear(),now.getMonth(),now.getDate());
-    working=working.replace(/\b(today|tonight)\b/i,' ');
+  // --- DATE RANGES first (before single-date matching) ---
+
+  // "Fri to Sun" / "Friday - Sunday" / "fri-sun" / "friday until sunday"
+  const dayRangeRe=new RegExp(`\\b(next\\s+)?(${DAYRE})\\s*(?:-|–|to|till|until|thru|through)\\s*(${DAYRE})\\b`,'i');
+  const dayRange=working.match(dayRangeRe);
+  if(dayRange){
+    const nextMod=!!dayRange[1];
+    const startDow=DAY_WORDS[dayRange[2].toLowerCase()];
+    const endDow=DAY_WORDS[dayRange[3].toLowerCase()];
+    let sDiff=startDow-todayDow; if(sDiff<0)sDiff+=7;
+    if(nextMod)sDiff+=7;
+    const sDate=addDays(now,sDiff);
+    let span=endDow-startDow; if(span<0)span+=7;
+    const eDate=addDays(sDate,span);
+    result.date=dk(sDate.getFullYear(),sDate.getMonth(),sDate.getDate());
+    result.endDate=dk(eDate.getFullYear(),eDate.getMonth(),eDate.getDate());
+    working=working.replace(dayRange[0],' ');
   }
-  // "tomorrow" / "tmrw"
-  else if(/\b(tomorrow|tmrw|tmw)\b/i.test(working)){
-    const d=addDays(now,1);
-    result.date=dk(d.getFullYear(),d.getMonth(),d.getDate());
-    working=working.replace(/\b(tomorrow|tmrw|tmw)\b/i,' ');
+
+  // "22-24 March" / "22 to 24 March" / "3rd-5th April"
+  if(!result.date){
+    const numRange=working.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|–|to|till|until)\s*(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i);
+    if(numRange){
+      const d1=parseInt(numRange[1],10), d2=parseInt(numRange[2],10);
+      const mon=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(numRange[3].toLowerCase().slice(0,3));
+      let yr=now.getFullYear();
+      if(new Date(yr,mon,d1)<now)yr++;
+      result.date=dk(yr,mon,d1);
+      result.endDate=dk(yr,mon,d2);
+      working=working.replace(numRange[0],' ');
+    }
   }
-  // "next friday" / "this friday" / "friday"
-  else {
-    const dayMatch=working.match(/\b(next|this)?\s*(sunday|sun|monday|mon|tuesday|tues|tue|wednesday|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat)\b/i);
-    if(dayMatch){
-      const modifier=(dayMatch[1]||'').toLowerCase();
-      const targetDow=DAY_WORDS[dayMatch[2].toLowerCase()];
-      let diff=targetDow-todayDow;
-      if(diff<=0)diff+=7;              // always look forward
-      if(modifier==='next')diff+=7;     // "next friday" = the one after this coming one
+
+  // "15/3 - 18/3" / "15/3 to 18/3"
+  if(!result.date){
+    const slashRange=working.match(/\b(\d{1,2})\/(\d{1,2})\s*(?:-|–|to|till|until)\s*(\d{1,2})\/(\d{1,2})\b/);
+    if(slashRange){
+      const d1=parseInt(slashRange[1],10),m1=parseInt(slashRange[2],10)-1;
+      const d2=parseInt(slashRange[3],10),m2=parseInt(slashRange[4],10)-1;
+      let yr=now.getFullYear();
+      if(new Date(yr,m1,d1)<now)yr++;
+      result.date=dk(yr,m1,d1);
+      result.endDate=dk(m2<m1?yr+1:yr,m2,d2);
+      working=working.replace(slashRange[0],' ');
+    }
+  }
+
+  // "for 3 days" / "3 day trip" / "for a week" / "for the weekend"
+  let durationDays=0;
+  const durMatch=working.match(/\bfor\s+(\d{1,2})\s*(?:day|days|night|nights)\b/i)
+               ||working.match(/\b(\d{1,2})\s*(?:day|night)\s+(?:trip|conference|festival|camp|stay|getaway|break)\b/i);
+  if(durMatch){durationDays=parseInt(durMatch[1],10);working=working.replace(durMatch[0],' ');}
+  else if(/\bfor\s+a\s+week\b/i.test(working)){durationDays=7;working=working.replace(/\bfor\s+a\s+week\b/i,' ');}
+  else if(/\bfor\s+the\s+weekend\b/i.test(working)||/\bthis\s+weekend\b/i.test(working)){
+    durationDays=3;
+    working=working.replace(/\b(?:for\s+the|this)\s+weekend\b/i,' ');
+    // Weekend = next Friday if no other date given
+    if(!result.date){
+      let diff=5-todayDow; if(diff<0)diff+=7;
       const d=addDays(now,diff);
       result.date=dk(d.getFullYear(),d.getMonth(),d.getDate());
-      working=working.replace(dayMatch[0],' ');
     }
-    // "on the 15th" / "15th" / "15/3" / "3 march"
+  }
+
+  // --- SINGLE DATE (only if no range found) ---
+  if(!result.date){
+    if(/\b(today|tonight)\b/i.test(working)){
+      result.date=dk(now.getFullYear(),now.getMonth(),now.getDate());
+      working=working.replace(/\b(today|tonight)\b/i,' ');
+    }
+    else if(/\b(tomorrow|tmrw|tmw)\b/i.test(working)){
+      const d=addDays(now,1);
+      result.date=dk(d.getFullYear(),d.getMonth(),d.getDate());
+      working=working.replace(/\b(tomorrow|tmrw|tmw)\b/i,' ');
+    }
     else {
-      const dmMatch=working.match(/\b(\d{1,2})\/(\d{1,2})\b/);
-      if(dmMatch){
-        const day=parseInt(dmMatch[1],10), mon=parseInt(dmMatch[2],10)-1;
-        let yr=now.getFullYear();
-        const cand=new Date(yr,mon,day);
-        if(cand<now)yr++;
-        result.date=dk(yr,mon,day);
-        working=working.replace(dmMatch[0],' ');
-      } else {
-        const monMatch=working.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i)
-                     ||working.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
-        if(monMatch){
-          let day,monStr;
-          if(/^\d/.test(monMatch[1])){day=parseInt(monMatch[1],10);monStr=monMatch[2];}
-          else{monStr=monMatch[1];day=parseInt(monMatch[2],10);}
-          const mon=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(monStr.toLowerCase().slice(0,3));
+      const dayMatch=working.match(new RegExp(`\\b(next|this)?\\s*(${DAYRE})\\b`,'i'));
+      if(dayMatch){
+        const modifier=(dayMatch[1]||'').toLowerCase();
+        const targetDow=DAY_WORDS[dayMatch[2].toLowerCase()];
+        let diff=targetDow-todayDow;
+        if(diff<=0)diff+=7;
+        if(modifier==='next')diff+=7;
+        const d=addDays(now,diff);
+        result.date=dk(d.getFullYear(),d.getMonth(),d.getDate());
+        working=working.replace(dayMatch[0],' ');
+      }
+      else {
+        const dmMatch=working.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+        if(dmMatch){
+          const day=parseInt(dmMatch[1],10), mon=parseInt(dmMatch[2],10)-1;
           let yr=now.getFullYear();
-          const cand=new Date(yr,mon,day);
-          if(cand<now)yr++;
+          if(new Date(yr,mon,day)<now)yr++;
           result.date=dk(yr,mon,day);
-          working=working.replace(monMatch[0],' ');
+          working=working.replace(dmMatch[0],' ');
+        } else {
+          const monMatch=working.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i)
+                       ||working.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
+          if(monMatch){
+            let day,monStr;
+            if(/^\d/.test(monMatch[1])){day=parseInt(monMatch[1],10);monStr=monMatch[2];}
+            else{monStr=monMatch[1];day=parseInt(monMatch[2],10);}
+            const mon=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(monStr.toLowerCase().slice(0,3));
+            let yr=now.getFullYear();
+            if(new Date(yr,mon,day)<now)yr++;
+            result.date=dk(yr,mon,day);
+            working=working.replace(monMatch[0],' ');
+          }
         }
       }
     }
   }
 
+  // Apply duration if we got one and have a start but no end
+  if(durationDays>1&&result.date&&!result.endDate){
+    const s=parseDate(result.date);
+    const e=addDays(s,durationDays-1);
+    result.endDate=dk(e.getFullYear(),e.getMonth(),e.getDate());
+  }
+
   // --- Clean up remaining text as title ---
-  result.title=working.replace(/\s+(on|at|the)\s*$/i,'').replace(/\s+/g,' ').trim();
-  // Capitalise first letter
+  result.title=working
+    .replace(/\s+(?:on|at|the|for|from|starting|beginning)\s*$/i,'')
+    .replace(/\s+(?:on|at|from)\s+(?=\s|$)/gi,' ')
+    .replace(/\s+/g,' ').trim();
   if(result.title)result.title=result.title[0].toUpperCase()+result.title.slice(1);
   return result;
 }
@@ -1351,9 +1447,41 @@ function visibleEvents(){
   });
 }
 
+/* ==============================================================
+   MULTI-DAY HELPERS
+   ============================================================== */
+/* Returns every date key an event covers (single day => [date]) */
+function eventDateRange(ev){
+  if(!ev.endDate||ev.endDate<=ev.date)return [ev.date];
+  const out=[];
+  let cur=parseDate(ev.date);
+  const end=parseDate(ev.endDate);
+  let guard=0;
+  while(cur<=end&&guard<400){
+    out.push(dk(cur.getFullYear(),cur.getMonth(),cur.getDate()));
+    cur=addDays(cur,1);guard++;
+  }
+  return out;
+}
+
+function isMultiDay(ev){ return !!(ev.endDate&&ev.endDate>ev.date); }
+
+/* Which day of the span is this? e.g. {n:2,total:3} */
+function spanPosition(ev,dateKey){
+  const range=eventDateRange(ev);
+  return {n:range.indexOf(dateKey)+1,total:range.length};
+}
+
+/* Events occurring on a given day, including multi-day spans */
+function eventsOnDay(dateKey){
+  return visibleEvents().filter(ev=>eventDateRange(ev).includes(dateKey));
+}
+
 function eventsByDate(){
   const map={};
-  visibleEvents().forEach(ev=>{(map[ev.date]=map[ev.date]||[]).push(ev);});
+  visibleEvents().forEach(ev=>{
+    eventDateRange(ev).forEach(d=>{(map[d]=map[d]||[]).push(ev);});
+  });
   return map;
 }
 
@@ -1376,7 +1504,8 @@ function renderWeek(){
     const col=document.createElement('div');
     col.className='week-day-col'+(key===today?' today':'')+(key===selDate?' selected':'');
     const count=(ebd[key]||[]).length;
-    col.innerHTML=`<div class="week-day-name">${WDAYS[i]}</div><div class="week-day-num">${d.getDate()}</div><div class="week-day-dot${count?' has-events':''}"></div>`;
+    const hasMulti=(ebd[key]||[]).some(isMultiDay);
+    col.innerHTML=`<div class="week-day-name">${WDAYS[i]}</div><div class="week-day-num">${d.getDate()}</div><div class="week-day-dot${count?' has-events':''}${hasMulti?' multi':''}"></div>`;
     col.onclick=()=>{selDate=key;buzz(5);renderWeek();};
     attachLongPress(col,()=>{buzz(25);openNewEvent(null,key);});
     strip.appendChild(col);
@@ -1435,8 +1564,19 @@ function renderMonth(){
       html+='<div class="month-cell-titles">';
       devs.slice(0,2).forEach(ev=>{
         const col=(users[ev.creator]||{}).color||'#888';
-        const label=(ev.emoji?ev.emoji:'')+esc(ev.title);
-        html+=`<div class="month-ev" style="background:${col}">${label}</div>`;
+        let cls='month-ev',label;
+        if(isMultiDay(ev)){
+          const range=eventDateRange(ev);
+          const idx=range.indexOf(key);
+          const isStart=idx===0, isEnd=idx===range.length-1;
+          cls+=isStart?' span-start':isEnd?' span-end':' span-mid';
+          // Only show the title on the first day (or first day of a week row)
+          const isRowStart=parseDate(key).getDay()===1; // Monday
+          label=(isStart||isRowStart)?((ev.emoji?ev.emoji:'')+esc(ev.title)):'&nbsp;';
+        } else {
+          label=(ev.emoji?ev.emoji:'')+esc(ev.title);
+        }
+        html+=`<div class="${cls}" style="background:${col}">${label}</div>`;
       });
       if(devs.length>2)html+=`<div class="month-more">+${devs.length-2}</div>`;
       html+='</div>';
@@ -1469,10 +1609,15 @@ function setCalView(v){
 /* ==============================================================
    DAY LIST (shared between views)
    ============================================================== */
-function buildEventCard(ev,showDate){
+function buildEventCard(ev,showDate,onDate){
   const wrap=document.createElement('div');wrap.className='ev-swipe';
   const cr=users[ev.creator]||{};
+  const multi=isMultiDay(ev);
   let badges='';
+  if(multi&&onDate){
+    const pos=spanPosition(ev,onDate);
+    badges+=`<span class="span-badge">Day ${pos.n} of ${pos.total}</span>`;
+  }
   if(ev.type==='plan'&&ev.rsvps){
     const v=Object.values(ev.rsvps);
     const g=v.filter(s=>s==='going').length,m=v.filter(s=>s==='maybe').length;
@@ -1480,12 +1625,18 @@ function buildEventCard(ev,showDate){
     if(m)badges+=`<span class="ev-badge" style="background:var(--warning-dim);color:var(--warning)">${m} maybe</span>`;
   }
   if(ev.repeat&&ev.repeat!=='none')badges+=`<span class="ev-badge" style="background:var(--surface-3);color:var(--text-dim)">🔁 ${ev.repeat}</span>`;
+
   let meta='';
   if(showDate){
     const d=parseDate(ev.date);
-    meta=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+(ev.time?' at '+ev.time:'');
+    if(multi){
+      const e=parseDate(ev.endDate);
+      meta=d.toLocaleDateString('en-AU',{day:'numeric',month:'short'})+' → '+e.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    } else {
+      meta=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+(ev.time?' at '+ev.time:'');
+    }
   } else {
-    meta=ev.time?ev.time:'All day';
+    meta=multi?'All day':(ev.time?ev.time:'All day');
   }
   if(ev.location)meta+=' · '+esc(ev.location);
 
@@ -1497,13 +1648,18 @@ function buildEventCard(ev,showDate){
 
 function renderDayList(containerId,dateKey){
   const c=document.getElementById(containerId);
-  const evts=visibleEvents().filter(e=>e.date===dateKey).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const evts=eventsOnDay(dateKey).sort((a,b)=>{
+    // Multi-day / all-day first, then by time
+    const am=isMultiDay(a)?0:1, bm=isMultiDay(b)?0:1;
+    if(am!==bm)return am-bm;
+    return (a.time||'').localeCompare(b.time||'');
+  });
   if(!evts.length){
     c.innerHTML=`<div class="day-empty">Nothing planned<br><button class="btn btn-sm btn-secondary" style="margin-top:10px" onclick="openNewEvent()">+ Add something</button></div>`;
     return;
   }
   c.innerHTML='';
-  evts.forEach(ev=>c.appendChild(buildEventCard(ev,false)));
+  evts.forEach(ev=>c.appendChild(buildEventCard(ev,false,dateKey)));
 }
 
 /* ==============================================================
@@ -1524,7 +1680,14 @@ function renderAvail(){
   const days=getMonthDays(availYear,availMonth);
   const evs=visibleEvents();
   const busyMap={};
-  evs.forEach(ev=>{const s=busyMap[ev.date]=busyMap[ev.date]||new Set();s.add(ev.creator);if(ev.rsvps)Object.entries(ev.rsvps).forEach(([n,st])=>{if(st==='going')s.add(n);});});
+  evs.forEach(ev=>{
+    const range=eventDateRange(ev);
+    range.forEach(dkey=>{
+      const s=busyMap[dkey]=busyMap[dkey]||new Set();
+      s.add(ev.creator);
+      if(ev.rsvps)Object.entries(ev.rsvps).forEach(([n,st])=>{if(st==='going')s.add(n);});
+    });
+  });
   const ulist=Object.values(users);
   grid.innerHTML='';
   days.forEach(d=>{
@@ -1548,21 +1711,7 @@ function renderPlans(){
   const plans=visibleEvents().filter(e=>e.type==='plan').sort((a,b)=>a.date>b.date?1:-1);
   if(!plans.length){c.innerHTML='<div class="day-empty">No plans yet</div>';return;}
   c.innerHTML='';
-  plans.forEach(ev=>{
-    const card=document.createElement('div');card.className='ev-card';card.onclick=()=>openDetail(ev.id);
-    const cr=users[ev.creator]||{};
-    const d=parseDate(ev.date);
-    let badges='';
-    if(ev.rsvps){
-      const v=Object.values(ev.rsvps);
-      const g=v.filter(s=>s==='going').length,m=v.filter(s=>s==='maybe').length,n=v.filter(s=>s==='not').length;
-      if(g)badges+=`<span class="ev-badge" style="background:var(--success-dim);color:var(--success)">${g} going</span>`;
-      if(m)badges+=`<span class="ev-badge" style="background:var(--warning-dim);color:var(--warning)">${m} maybe</span>`;
-      if(n)badges+=`<span class="ev-badge" style="background:var(--danger-dim);color:var(--danger)">${n} can't</span>`;
-    }
-    card.innerHTML=`<div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${esc(ev.title)}</div><div class="ev-meta">${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}${ev.time?' at '+ev.time:''}${ev.location?' · '+esc(ev.location):''}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div>`;
-    c.appendChild(card);
-  });
+  plans.forEach(ev=>c.appendChild(buildEventCard(ev,true)));
 }
 
 /* ==============================================================
@@ -1634,6 +1783,7 @@ function openNewEvent(type,forDate){
   document.getElementById('ev-title').value='';
   const d=forDate||selDate;
   document.getElementById('ev-date').value=d;
+  document.getElementById('ev-enddate').value='';
   document.getElementById('ev-time').value='';
   document.getElementById('ev-location').value='';
   document.getElementById('ev-desc').value='';
@@ -1644,6 +1794,7 @@ function openNewEvent(type,forDate){
   document.getElementById('ev-dup-btn').classList.add('hidden');
   document.getElementById('ev-more-toggle').classList.remove('open');
   document.getElementById('ev-more-body').classList.remove('open');
+  setMultiDay(false);updateSpanHint();
   renderEmojiRow('');renderDateChips(d);renderTimeChips('');renderRepeatPills('none');
   renderGroupOpts();openPanel('panel-event');
   setTimeout(()=>document.getElementById('ev-title').focus(),150);
@@ -1655,9 +1806,15 @@ async function saveEvent(){
   const date=document.getElementById('ev-date').value;
   if(!title){document.getElementById('ev-err').textContent='Give it a title';return;}
   if(!date){document.getElementById('ev-err').textContent='Pick a date';return;}
+
+  const multi=document.getElementById('ev-multiday-btn').classList.contains('on');
+  let endDate=multi?document.getElementById('ev-enddate').value:'';
+  if(endDate&&endDate<date){document.getElementById('ev-err').textContent='End date is before the start date';return;}
+  if(endDate===date)endDate='';
+
   const emoji=document.getElementById('ev-emoji-row').dataset.selected||'';
   const repeat=document.getElementById('ev-repeat-pills').dataset.selected||'none';
-  const data={title,date,time:document.getElementById('ev-time').value,location:document.getElementById('ev-location').value.trim(),desc:document.getElementById('ev-desc').value.trim(),groupId:document.getElementById('ev-group').value,privacy:document.getElementById('ev-privacy').value,type:document.getElementById('ev-type').value,emoji,repeat,creator:me.name,updated:Date.now()};
+  const data={title,date,endDate,time:document.getElementById('ev-time').value,location:document.getElementById('ev-location').value.trim(),desc:document.getElementById('ev-desc').value.trim(),groupId:document.getElementById('ev-group').value,privacy:document.getElementById('ev-privacy').value,type:document.getElementById('ev-type').value,emoji,repeat,creator:me.name,updated:Date.now()};
 
   if(id){
     await db.ref('events/'+id).update(data);
@@ -1665,24 +1822,26 @@ async function saveEvent(){
   } else {
     data.rsvps={};data.created=Date.now();
     await db.ref('events').push().set(data);
-    // Create repeat occurrences (next 12)
     if(repeat!=='none'){
       const base=parseDate(date);
+      const spanDays=endDate?Math.round((parseDate(endDate)-base)/86400000):0;
       const step=repeat==='weekly'?7:repeat==='fortnightly'?14:0;
       for(let i=1;i<=11;i++){
         let nd;
         if(repeat==='monthly'){nd=new Date(base.getFullYear(),base.getMonth()+i,base.getDate());}
         else{nd=addDays(base,step*i);}
-        const copy={...data,date:dk(nd.getFullYear(),nd.getMonth(),nd.getDate()),rsvps:{},created:Date.now()};
+        const ndKey=dk(nd.getFullYear(),nd.getMonth(),nd.getDate());
+        let neKey='';
+        if(spanDays>0){const ne=addDays(nd,spanDays);neKey=dk(ne.getFullYear(),ne.getMonth(),ne.getDate());}
+        const copy={...data,date:ndKey,endDate:neKey,rsvps:{},created:Date.now()};
         await db.ref('events').push().set(copy);
       }
       toast('Added '+title+' ×12');
     } else {
-      toast('Added');
+      toast(endDate?'Added multi-day event':'Added');
     }
   }
   buzz();
-  // Jump to that date
   selDate=date;viewWeekStart=getWeekStart(parseDate(date));
   closePanel('panel-event');
 }
@@ -1723,7 +1882,14 @@ function renderDetail(eid){
   document.getElementById('detail-title').textContent=ev.title;
   document.getElementById('detail-edit-btn').classList.toggle('hidden',ev.creator!==me.name);
   const d=parseDate(ev.date), cr=users[ev.creator]||{};
-  let html=`<div style="font-size:14px;color:var(--text-dim)">${d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}${ev.time?' at '+ev.time:''}</div>`;
+  let html;
+  if(isMultiDay(ev)){
+    const e=parseDate(ev.endDate);
+    const days=eventDateRange(ev).length;
+    html=`<div style="font-size:14px;color:var(--text-dim)">${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'long'})} → ${e.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'long',year:'numeric'})}</div><div style="font-size:12px;color:var(--accent);font-weight:600;margin-top:2px">${days} days</div>`;
+  } else {
+    html=`<div style="font-size:14px;color:var(--text-dim)">${d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}${ev.time?' at '+ev.time:''}</div>`;
+  }
   if(ev.location)html+=`<div style="font-size:14px;margin-top:4px">📍 ${esc(ev.location)}</div>`;
   if(ev.desc)html+=`<div style="font-size:14px;color:var(--text-dim);margin-top:6px">${esc(ev.desc)}</div>`;
   html+=`<div style="margin-top:8px;font-size:12px;color:var(--text-faint)">By <span style="color:${cr.color||'#888'};font-weight:600">${esc(ev.creator)}</span></div>`;
@@ -1763,6 +1929,7 @@ function editFromDetail(){
   document.getElementById('ev-id').value=ev.id;
   document.getElementById('ev-title').value=ev.title;
   document.getElementById('ev-date').value=ev.date;
+  document.getElementById('ev-enddate').value=ev.endDate||'';
   document.getElementById('ev-time').value=ev.time||'';
   document.getElementById('ev-location').value=ev.location||'';
   document.getElementById('ev-desc').value=ev.desc||'';
@@ -1773,7 +1940,9 @@ function editFromDetail(){
   document.getElementById('ev-dup-btn').classList.remove('hidden');
   document.getElementById('ev-more-toggle').classList.remove('open');
   document.getElementById('ev-more-body').classList.remove('open');
-  renderEmojiRow(ev.emoji||'');renderDateChips(ev.date);renderTimeChips(ev.time||'');renderRepeatPills(ev.repeat||'none');
+  setMultiDay(isMultiDay(ev));
+  renderEmojiRow(ev.emoji||'');renderDateChips(ev.date);renderEndDateChips();renderTimeChips(ev.time||'');renderRepeatPills(ev.repeat||'none');
+  updateSpanHint();
   renderGroupOpts();if(ev.groupId)document.getElementById('ev-group').value=ev.groupId;
   openPanel('panel-event');
 }
@@ -2173,6 +2342,74 @@ function spinWheel(){
 }
 
 /* ==============================================================
+   MULTI-DAY FORM CONTROLS
+   ============================================================== */
+function toggleMultiDay(){
+  const btn=document.getElementById('ev-multiday-btn');
+  const wrap=document.getElementById('ev-enddate-wrap');
+  const on=btn.classList.toggle('on');
+  wrap.classList.toggle('hidden',!on);
+  buzz(5);
+  if(on){
+    const start=document.getElementById('ev-date').value;
+    if(start&&!document.getElementById('ev-enddate').value){
+      // Default to next day
+      const d=addDays(parseDate(start),1);
+      document.getElementById('ev-enddate').value=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    }
+    renderEndDateChips();
+  }
+  updateSpanHint();
+}
+
+function setMultiDay(on){
+  const btn=document.getElementById('ev-multiday-btn');
+  const wrap=document.getElementById('ev-enddate-wrap');
+  btn.classList.toggle('on',on);
+  wrap.classList.toggle('hidden',!on);
+}
+
+function onStartDateChange(){
+  const start=document.getElementById('ev-date').value;
+  const end=document.getElementById('ev-enddate').value;
+  if(end&&start&&end<start)document.getElementById('ev-enddate').value=start;
+  renderDateChips(start);renderEndDateChips();updateSpanHint();
+}
+
+/* Quick "+N days" chips for the end date */
+function renderEndDateChips(){
+  const c=document.getElementById('ev-enddate-chips');if(!c)return;
+  c.innerHTML='';
+  const start=document.getElementById('ev-date').value;
+  if(!start)return;
+  const cur=document.getElementById('ev-enddate').value;
+  const base=parseDate(start);
+  [[1,'2 days'],[2,'3 days'],[3,'4 days'],[6,'1 week'],[13,'2 weeks']].forEach(([off,label])=>{
+    const d=addDays(base,off);
+    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    const b=document.createElement('button');
+    b.className='date-chip'+(key===cur?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{
+      document.getElementById('ev-enddate').value=key;
+      c.querySelectorAll('.date-chip').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');buzz(5);updateSpanHint();
+    };
+    c.appendChild(b);
+  });
+}
+
+function updateSpanHint(){
+  const hint=document.getElementById('ev-span-hint');if(!hint)return;
+  const start=document.getElementById('ev-date').value;
+  const end=document.getElementById('ev-enddate').value;
+  if(!start||!end||end<=start){hint.textContent='';return;}
+  const days=Math.round((parseDate(end)-parseDate(start))/86400000)+1;
+  const sd=parseDate(start),ed=parseDate(end);
+  hint.textContent=`${days} days · ${sd.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})} to ${ed.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}`;
+}
+
+/* ==============================================================
    QUICK ADD
    ============================================================== */
 let quickParsed=null;
@@ -2186,7 +2423,13 @@ function onQuickAddInput(){
   let chips='';
   if(p.date){
     const d=parseDate(p.date);
-    chips+=`<span class="quick-parse-chip">📅 ${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</span>`;
+    if(p.endDate&&p.endDate>p.date){
+      const e=parseDate(p.endDate);
+      const days=Math.round((e-d)/86400000)+1;
+      chips+=`<span class="quick-parse-chip">📅 ${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})} → ${e.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})} (${days} days)</span>`;
+    } else {
+      chips+=`<span class="quick-parse-chip">📅 ${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</span>`;
+    }
   }
   if(p.time)chips+=`<span class="quick-parse-chip">🕐 ${p.time}</span>`;
   if(p.location)chips+=`<span class="quick-parse-chip">📍 ${esc(p.location)}</span>`;
@@ -2203,10 +2446,12 @@ async function submitQuickAdd(){
   const data={
     title:p.title,
     date:p.date||selDate,
+    endDate:p.endDate||'',
     time:p.time||'',
     location:p.location||'',
     desc:'',groupId:'',privacy:'everyone',type:'event',
     emoji:guessEmoji(p.title),
+    repeat:'none',
     creator:me.name,rsvps:{},created:Date.now(),updated:Date.now()
   };
   await db.ref('events').push().set(data);
@@ -2215,8 +2460,12 @@ async function submitQuickAdd(){
   quickParsed=null;
   buzz();
   const d=parseDate(data.date);
-  toast('Added: '+data.title+' on '+d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}));
-  // Jump to the date we just added to
+  if(data.endDate){
+    const days=Math.round((parseDate(data.endDate)-d)/86400000)+1;
+    toast('Added: '+data.title+' ('+days+' days)');
+  } else {
+    toast('Added: '+data.title+' on '+d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}));
+  }
   if(data.date!==selDate){
     selDate=data.date;
     viewWeekStart=getWeekStart(parseDate(data.date));
@@ -2330,8 +2579,9 @@ function toggleEvMore(){
 function renderUpNext(){
   const c=document.getElementById('upnext');
   const today=todayStr();
+  // Include events still running (endDate >= today)
   const upcoming=visibleEvents()
-    .filter(e=>e.date>=today)
+    .filter(e=>(e.endDate||e.date)>=today)
     .sort((a,b)=>a.date===b.date?(a.time||'').localeCompare(b.time||''):(a.date>b.date?1:-1))
     .slice(0,3);
   if(!upcoming.length){c.innerHTML='';return;}
@@ -2339,9 +2589,12 @@ function renderUpNext(){
   upcoming.forEach(ev=>{
     const d=parseDate(ev.date);
     const days=Math.round((d-parseDate(today))/86400000);
-    const when=days===0?'Today':days===1?'Tomorrow':days<7?d.toLocaleDateString('en-AU',{weekday:'short'}):d.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    let when;
+    if(isMultiDay(ev)&&ev.date<=today&&ev.endDate>=today){when='Now';}
+    else when=days===0?'Today':days===1?'Tomorrow':days<7?d.toLocaleDateString('en-AU',{weekday:'short'}):d.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
     const cr=users[ev.creator]||{};
-    html+=`<div class="upnext-card" onclick="openDetail('${ev.id}')"><span class="upnext-when">${when}</span><span style="width:3px;height:22px;border-radius:2px;background:${cr.color||'#888'};flex-shrink:0"></span><span class="upnext-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</span>${ev.time?`<span class="upnext-time">${ev.time}</span>`:''}</div>`;
+    const span=isMultiDay(ev)?`<span class="span-badge">${eventDateRange(ev).length}d</span>`:'';
+    html+=`<div class="upnext-card" onclick="openDetail('${ev.id}')"><span class="upnext-when">${when}</span><span style="width:3px;height:22px;border-radius:2px;background:${cr.color||'#888'};flex-shrink:0"></span><span class="upnext-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</span>${span}${ev.time&&!isMultiDay(ev)?`<span class="upnext-time">${ev.time}</span>`:''}</div>`;
   });
   c.innerHTML=html;
 }
