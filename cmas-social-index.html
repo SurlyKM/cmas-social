@@ -409,6 +409,24 @@ input,select,textarea,button{font-family:var(--font)}
 .toast{position:fixed;bottom:calc(80px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface-3);color:var(--text);padding:11px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* Inline event wheel */
+.ev-wheel-wrap{padding:12px 16px}
+.ev-wheel-empty{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ev-wheel-stage{display:flex;flex-direction:column;align-items:center;padding:6px 0}
+.ev-wheel-canvas-wrap{position:relative;width:190px;height:190px}
+.ev-wheel-canvas{width:190px;height:190px;transition:transform 4s cubic-bezier(.2,.8,.3,1)}
+.ev-wheel-pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:18px solid var(--primary);z-index:2;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+.ev-wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;background:var(--surface);border:3px solid var(--border);border-radius:50%;z-index:1}
+.ev-wheel-name{font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.ev-wheel-result{text-align:center;margin:10px 0 4px;min-height:26px}
+.ev-wheel-result-big{font-size:19px;font-weight:700;color:var(--primary)}
+.ev-wheel-result-by{font-size:11px;color:var(--text-faint);margin-top:2px}
+.ev-wheel-actions{display:flex;gap:6px;width:100%;margin-top:6px}
+
+/* Wheel pick rows */
+.wheelpick-row{display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.wheelpick-row:active{background:var(--surface-3)}
+
 /* Profile */
 .header-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;color:#fff;font:700 12px var(--font);display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;padding:0}
 .header-avatar:active{transform:scale(.93)}
@@ -748,6 +766,7 @@ input,select,textarea,button{font-family:var(--font)}
     </div>
     <div id="detail-info" style="padding:12px 16px;border-bottom:1px solid var(--border)"></div>
     <div id="detail-rsvp" style="padding:0 16px;border-bottom:1px solid var(--border)"></div>
+    <div id="detail-wheel" style="border-bottom:1px solid var(--border)"></div>
     <div style="padding:8px 16px;font-size:12px;font-weight:700;color:var(--text-faint);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em">Chat</div>
     <div id="detail-chat" class="chat-area"></div>
     <div class="chat-input-row">
@@ -864,6 +883,21 @@ input,select,textarea,button{font-family:var(--font)}
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL: Pick a wheel for an event
+     ============================================================ -->
+<div id="panel-wheelpick" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-wheelpick')"></div>
+  <div class="panel-body">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title">Pick a wheel</div>
+      <button class="btn-icon" onclick="closePanel('panel-wheelpick')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="panel-scroll" id="wheelpick-list"></div>
   </div>
 </div>
 
@@ -1440,10 +1474,18 @@ function startApp() {
     if(me&&users[me.name])me={...me,...users[me.name]};
     renderAll();
   });
-  db.ref('events').on('value',s=>{events={};s.forEach(c=>{events[c.key]={id:c.key,...c.val()};});renderAll();if(detailId&&events[detailId])renderDetail(detailId);});
+  db.ref('events').on('value',s=>{
+    events={};s.forEach(c=>{events[c.key]={id:c.key,...c.val()};});
+    renderAll();
+    if(detailId&&events[detailId])renderDetail(detailId);
+  });
   db.ref('groups').on('value',s=>{allG={};s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];allG[c.key]={id:c.key,...v};});groups=allG;renderGroups();renderGroupOpts();});
   db.ref('polls').on('value',s=>{polls={};s.forEach(c=>{polls[c.key]={id:c.key,...c.val()};});renderPolls();if(activePollId&&polls[activePollId])renderPollDetail(activePollId);});
-  db.ref('wheels').on('value',s=>{wheels={};s.forEach(c=>{wheels[c.key]={id:c.key,...c.val()};});renderWheelSection();});
+  db.ref('wheels').on('value',s=>{
+    wheels={};s.forEach(c=>{wheels[c.key]={id:c.key,...c.val()};});
+    renderWheelSection();
+    if(detailId&&events[detailId]&&!evWheelSpinning)renderDetailWheel(detailId);
+  });
 
   setupPresence();
   renderAll();
@@ -1683,6 +1725,7 @@ function buildEventCard(ev,showDate,onDate){
     if(m)badges+=`<span class="ev-badge" style="background:var(--warning-dim);color:var(--warning)">${m} maybe</span>`;
   }
   if(ev.repeat&&ev.repeat!=='none')badges+=`<span class="ev-badge" style="background:var(--surface-3);color:var(--text-dim)">🔁 ${ev.repeat}</span>`;
+  if(ev.wheelResult&&ev.wheelResult.result)badges+=`<span class="ev-badge" style="background:var(--primary-dim);color:var(--primary)">🎡 ${esc(ev.wheelResult.result)}</span>`;
 
   let meta='';
   if(showDate){
@@ -1972,6 +2015,13 @@ function renderDetail(eid){
     }
     rDiv.innerHTML=r;rDiv.style.display='';
   } else rDiv.style.display='none';
+
+  renderDetailWheelSafe(eid);
+}
+
+function renderDetailWheelSafe(eid){
+  if(evWheelSpinning)return;
+  renderDetailWheel(eid);
 }
 
 async function setRsvp(eid,st){
@@ -2016,7 +2066,12 @@ function renderChat(eid){
   msgs.forEach(m=>{
     const div=document.createElement('div');div.className='chat-msg';
     const u=users[m.author]||{};
-    div.innerHTML=`<div class="chat-msg-head"><span class="chat-msg-name" style="color:${u.color||'#888'}">${esc(m.author)}</span><span class="chat-msg-time">${new Date(m.ts).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</span></div><div class="chat-msg-text">${esc(m.text)}</div>`;
+    if(m.system){
+      div.innerHTML=`<div style="text-align:center;font-size:12px;color:var(--accent);background:var(--accent-dim);padding:6px 12px;border-radius:12px;margin:4px auto;display:inline-block">${esc(m.text)}</div>`;
+      div.style.textAlign='center';
+    } else {
+      div.innerHTML=`<div class="chat-msg-head"><span class="chat-msg-name" style="color:${u.color||'#888'}">${esc(m.author)}</span><span class="chat-msg-time">${new Date(m.ts).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</span></div><div class="chat-msg-text">${esc(m.text)}</div>`;
+    }
     c.appendChild(div);
   });
   c.scrollTop=c.scrollHeight;
@@ -2312,56 +2367,7 @@ async function saveWheel(){
 const WHEEL_COLORS=['#f06b6b','#f0a06b','#f0d76b','#6bf07a','#6bf0d7','#6bb8f0','#8b6bf0','#d76bf0','#f06bb8','#f09b6b','#6bf0a0','#6b8bf0','#c06bf0','#6bf0e0'];
 
 function drawWheel(){
-  const canvas=document.getElementById('wheel-canvas');
-  const ctx=canvas.getContext('2d');
-  const items=wheelItems.filter(i=>i.trim());
-  const cx=280,cy=280,r=260;
-  ctx.clearRect(0,0,560,560);
-  if(items.length===0){
-    ctx.fillStyle='#333';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#888';ctx.font='600 20px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Add items below',cx,cy);
-    return;
-  }
-  const slice=Math.PI*2/items.length;
-  items.forEach((item,i)=>{
-    // Draw segment
-    const startAngle=i*slice-Math.PI/2;
-    const endAngle=(i+1)*slice-Math.PI/2;
-    ctx.beginPath();ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,startAngle,endAngle);
-    ctx.closePath();
-    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=2;ctx.stroke();
-
-    // Draw label along the middle of the segment
-    const midAngle=startAngle+slice/2;
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate(midAngle);
-
-    // Truncate label
-    const maxLen=items.length>8?10:items.length>5?14:18;
-    const label=item.length>maxLen?item.slice(0,maxLen-1)+'…':item;
-    const fontSize=items.length>10?12:items.length>6?14:16;
-
-    // Text outline for readability
-    ctx.font=`700 ${fontSize}px "Plus Jakarta Sans",sans-serif`;
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-
-    // Position text at 60% of radius
-    const textR=r*0.62;
-
-    // Draw text with dark outline for contrast
-    ctx.strokeStyle='rgba(0,0,0,.6)';
-    ctx.lineWidth=3;
-    ctx.lineJoin='round';
-    ctx.strokeText(label,textR,0);
-    ctx.fillStyle='#fff';
-    ctx.fillText(label,textR,0);
-
-    ctx.restore();
-  });
+  drawWheelOn('wheel-canvas',wheelItems.filter(i=>i.trim()),280);
 }
 
 function spinWheel(){
@@ -2929,6 +2935,175 @@ async function signOut(){
   try{await db.ref('presence/'+sessionId).remove();}catch(e){}
   localStorage.removeItem('cmas-user');
   location.reload();
+}
+
+/* ==============================================================
+   EVENT WHEEL (spin from inside an event)
+   ============================================================== */
+let evWheelSpinning=false;
+
+function renderDetailWheel(eid){
+  const ev=events[eid];if(!ev)return;
+  const c=document.getElementById('detail-wheel');
+  const wheelList=Object.values(wheels);
+
+  // No wheel attached yet
+  if(!ev.wheelId||!wheels[ev.wheelId]){
+    if(!wheelList.length){
+      c.innerHTML=`<div class="ev-wheel-wrap"><div class="ev-wheel-empty"><span style="font-size:13px;color:var(--text-faint)">🎡 No wheels created yet</span><button class="btn btn-sm btn-secondary" onclick="closePanel('panel-detail');switchTab('plans');switchPlanSection('wheel')">Make one</button></div></div>`;
+    } else {
+      c.innerHTML=`<div class="ev-wheel-wrap"><div class="ev-wheel-empty"><span style="font-size:13px;color:var(--text-dim)">🎡 Can't decide?</span><button class="btn btn-sm btn-secondary" onclick="openWheelPicker('${eid}')">Attach a wheel</button></div></div>`;
+    }
+    return;
+  }
+
+  const w=wheels[ev.wheelId];
+  const items=w.items?Object.values(w.items).filter(i=>i&&i.trim()):[];
+  const res=ev.wheelResult;
+
+  let resultHtml='';
+  if(res&&res.result){
+    const by=users[res.by]||{};
+    resultHtml=`<div class="ev-wheel-result"><div class="ev-wheel-result-big">🎉 ${esc(res.result)}</div><div class="ev-wheel-result-by">spun by <span style="color:${by.color||'#888'};font-weight:600">${esc(res.by)}</span></div></div>`;
+  } else {
+    resultHtml=`<div class="ev-wheel-result"><span style="font-size:13px;color:var(--text-faint)">Not spun yet</span></div>`;
+  }
+
+  c.innerHTML=`
+    <div class="ev-wheel-wrap">
+      <div class="ev-wheel-name">🎡 ${esc(w.name)}</div>
+      <div class="ev-wheel-stage">
+        <div class="ev-wheel-canvas-wrap">
+          <div class="ev-wheel-pointer"></div>
+          <canvas id="ev-wheel-canvas" class="ev-wheel-canvas" width="380" height="380"></canvas>
+          <div class="ev-wheel-center"></div>
+        </div>
+        ${resultHtml}
+        <div class="ev-wheel-actions">
+          <button class="btn btn-primary" style="flex:1" id="ev-wheel-spin" onclick="spinEventWheel('${eid}')">${res&&res.result?'Spin again':'Spin'}</button>
+          <button class="btn btn-secondary btn-sm" onclick="openWheelPicker('${eid}')">Change</button>
+          <button class="btn btn-secondary btn-sm" onclick="detachEventWheel('${eid}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+
+  // Draw it, restoring the resting angle if it's been spun
+  drawWheelOn('ev-wheel-canvas',items,190);
+  if(res&&typeof res.angle==='number'){
+    const cv=document.getElementById('ev-wheel-canvas');
+    cv.style.transition='none';
+    cv.style.transform=`rotate(${res.angle}deg)`;
+  }
+}
+
+/* Generic wheel drawing, reusable across canvases */
+function drawWheelOn(canvasId,items,displaySize){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const size=canvas.width;
+  const cx=size/2,cy=size/2,r=size/2-10;
+  ctx.clearRect(0,0,size,size);
+  if(!items.length){
+    ctx.fillStyle='#333';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#888';ctx.font=`600 ${size*0.05}px "Plus Jakarta Sans",sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('No items',cx,cy);
+    return;
+  }
+  const slice=Math.PI*2/items.length;
+  const scale=size/560; // reference size used for font tuning
+  items.forEach((item,i)=>{
+    const start=i*slice-Math.PI/2, end=(i+1)*slice-Math.PI/2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
+    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=2;ctx.stroke();
+
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(start+slice/2);
+    const maxLen=items.length>8?10:items.length>5?14:18;
+    const label=item.length>maxLen?item.slice(0,maxLen-1)+'…':item;
+    const fontSize=Math.max(10,(items.length>10?12:items.length>6?14:16)*scale);
+    ctx.font=`700 ${fontSize}px "Plus Jakarta Sans",sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=Math.max(2,3*scale);ctx.lineJoin='round';
+    ctx.strokeText(label,r*0.62,0);
+    ctx.fillStyle='#fff';ctx.fillText(label,r*0.62,0);
+    ctx.restore();
+  });
+}
+
+function openWheelPicker(eid){
+  const c=document.getElementById('wheelpick-list');
+  const wl=Object.values(wheels).sort((a,b)=>(b.created||0)-(a.created||0));
+  if(!wl.length){
+    c.innerHTML='<div class="day-empty">No wheels yet. Create one in Plans → Wheel.</div>';
+  } else {
+    c.innerHTML='';
+    wl.forEach(w=>{
+      const items=w.items?Object.values(w.items).filter(i=>i&&i.trim()):[];
+      const row=document.createElement('div');row.className='wheelpick-row';
+      row.innerHTML=`<div><div style="font-size:15px;font-weight:600">${esc(w.name)}</div><div style="font-size:12px;color:var(--text-dim)">${items.length} items</div></div><span style="font-size:22px">🎡</span>`;
+      row.onclick=async()=>{
+        await db.ref('events/'+eid+'/wheelId').set(w.id);
+        await db.ref('events/'+eid+'/wheelResult').remove();
+        closePanel('panel-wheelpick');
+        buzz();toast('Attached '+w.name);
+      };
+      c.appendChild(row);
+    });
+  }
+  openPanel('panel-wheelpick');
+}
+
+async function detachEventWheel(eid){
+  const ok=await appConfirm('Remove this wheel from the event?',{okText:'Remove'});
+  if(!ok)return;
+  await db.ref('events/'+eid+'/wheelId').remove();
+  await db.ref('events/'+eid+'/wheelResult').remove();
+  toast('Wheel removed');
+}
+
+async function spinEventWheel(eid){
+  if(evWheelSpinning)return;
+  const ev=events[eid];if(!ev||!ev.wheelId)return;
+  const w=wheels[ev.wheelId];if(!w)return;
+  const items=w.items?Object.values(w.items).filter(i=>i&&i.trim()):[];
+  if(items.length<2){toast('Wheel needs at least 2 items');return;}
+
+  evWheelSpinning=true;
+  const btn=document.getElementById('ev-wheel-spin');
+  if(btn){btn.disabled=true;btn.textContent='Spinning...';}
+  const cv=document.getElementById('ev-wheel-canvas');
+
+  const spins=5+Math.random()*5;
+  const extra=Math.random()*360;
+  const total=spins*360+extra;
+
+  cv.style.transition='none';
+  cv.style.transform='rotate(0deg)';
+  cv.offsetHeight;
+  cv.style.transition='transform 4s cubic-bezier(.2,.8,.3,1)';
+  cv.style.transform=`rotate(${total}deg)`;
+  buzz(15);
+
+  setTimeout(async()=>{
+    const finalDeg=total%360;
+    const slice=360/items.length;
+    const idx=Math.floor(((360-finalDeg)%360)/slice);
+    const winner=items[idx];
+
+    // Save the result so everyone sees it
+    await db.ref('events/'+eid+'/wheelResult').set({
+      result:winner, by:me.name, ts:Date.now(), angle:finalDeg, wheelName:w.name
+    });
+    // Post to the event chat so it shows up in the thread
+    await db.ref('chat/'+eid+'/messages').push({
+      author:me.name, text:'🎡 Spun "'+w.name+'" → '+winner, ts:Date.now(), system:true
+    });
+
+    evWheelSpinning=false;
+    buzz(30);
+    toast('🎉 '+winner);
+  },4200);
 }
 
 /* ==============================================================
