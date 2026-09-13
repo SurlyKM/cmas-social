@@ -1136,7 +1136,7 @@ input,select,textarea,button{font-family:var(--font)}
      MODAL: Custom confirm/alert/prompt (replaces browser dialogs)
      ============================================================ -->
 <div id="modal-dialog" class="panel">
-  <div class="panel-backdrop" onclick="modalCancel()"></div>
+  <div class="panel-backdrop" onclick="modalDismiss()"></div>
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(100% - 40px);max-width:340px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;z-index:1;animation:fadeIn .15s ease-out">
     <div id="modal-msg" style="font-size:15px;margin-bottom:6px"></div>
     <input id="modal-input" class="hidden" style="width:100%;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:15px;outline:none;margin-top:8px" onkeydown="if(event.key==='Enter')modalOk()">
@@ -1337,35 +1337,48 @@ function parseEventText(text){
    CUSTOM DIALOGS (replaces confirm/alert/prompt for mobile)
    ============================================================== */
 let _modalResolve=null;
+let _modalDismissable=true;
 
 function showModal(msg, opts={}){
   return new Promise(resolve=>{
     _modalResolve=resolve;
+    _modalDismissable=!opts.cancelText;
     document.getElementById('modal-msg').textContent=msg;
     document.getElementById('modal-err').textContent='';
     const inp=document.getElementById('modal-input');
     if(opts.input){inp.classList.remove('hidden');inp.value=opts.inputValue||'';inp.placeholder=opts.placeholder||'';setTimeout(()=>inp.focus(),100);}
     else inp.classList.add('hidden');
-    document.getElementById('modal-cancel-btn').classList.toggle('hidden',!!opts.alertOnly);
-    document.getElementById('modal-ok-btn').textContent=opts.okText||'OK';
-    if(opts.danger)document.getElementById('modal-ok-btn').className='btn btn-danger';
-    else document.getElementById('modal-ok-btn').className='btn btn-primary';
-    document.getElementById('modal-ok-btn').style.flex='1';
+    const cancelBtn=document.getElementById('modal-cancel-btn');
+    cancelBtn.classList.toggle('hidden',!!opts.alertOnly);
+    cancelBtn.textContent=opts.cancelText||'Cancel';
+    const okBtn=document.getElementById('modal-ok-btn');
+    okBtn.textContent=opts.okText||'OK';
+    okBtn.className=opts.danger?'btn btn-danger':'btn btn-primary';
+    okBtn.style.flex='1';
     document.getElementById('modal-dialog').classList.add('open');
   });
 }
 
 function modalOk(){
   const inp=document.getElementById('modal-input');
-  const hasInput=!inp.classList.contains('hidden');
+  const hasInp=!inp.classList.contains('hidden');
   document.getElementById('modal-dialog').classList.remove('open');
-  if(_modalResolve) _modalResolve(hasInput?inp.value:true);
+  if(_modalResolve) _modalResolve(hasInp?inp.value:true);
   _modalResolve=null;
 }
 
 function modalCancel(){
   document.getElementById('modal-dialog').classList.remove('open');
   if(_modalResolve) _modalResolve(hasInput()?null:false);
+  _modalResolve=null;
+}
+
+/* Backdrop tap: for a two-choice prompt with a custom cancel label,
+   dismissing is neither choice, so resolve null instead of false. */
+function modalDismiss(){
+  if(_modalDismissable){modalCancel();return;}
+  document.getElementById('modal-dialog').classList.remove('open');
+  if(_modalResolve) _modalResolve(null);
   _modalResolve=null;
 }
 
@@ -1418,6 +1431,22 @@ function getWeekStart(d){ const day=d.getDay(); const diff=(day===0?-6:1-day); c
 function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
 function encKey(s){ return s.replace(/[.$#\[\]/]/g,'_'); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+/* Escape for use inside an HTML attribute value (esc() leaves quotes alone) */
+function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+/* Escape for use inside a single-quoted JS string in an inline handler */
+function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' '); }
+
+/* Firebase RTDB keys cannot contain . $ # [ ] / or control chars.
+   Names are used directly as keys for rsvps and poll votes, so reject them up front. */
+const BAD_NAME_CHARS=/[.$#\[\]/\x00-\x1F\x7F]/;
+function nameError(name){
+  if(!name)return 'Enter a name';
+  if(name.length>20)return 'Name too long (20 max)';
+  if(BAD_NAME_CHARS.test(name))return 'Name can\'t contain . $ # [ ] or /';
+  return null;
+}
 
 /* ==============================================================
    CRYPTO: SHA-256 hash for recovery codes
@@ -1509,8 +1538,8 @@ document.getElementById('join-code').addEventListener('keydown',e=>{if(e.key==='
 // Profile: pick name + colour, generate recovery code
 async function submitProfile() {
   const name = document.getElementById('profile-name').value.trim();
-  if (!name) { document.getElementById('profile-err').textContent='Enter a name'; return; }
-  if (name.length>20) { document.getElementById('profile-err').textContent='Too long (20 max)'; return; }
+  const nerr = nameError(name);
+  if (nerr) { document.getElementById('profile-err').textContent=nerr; return; }
 
   const snap = await db.ref('users/'+encKey(name)).once('value');
   if (snap.exists()) { document.getElementById('profile-err').textContent='Name taken, try another'; return; }
@@ -1567,7 +1596,8 @@ async function submitFirst() {
   const code = document.getElementById('first-code').value.trim();
   const name = document.getElementById('first-name').value.trim();
   if (!code||code.length<3) { document.getElementById('first-err').textContent='Code needs 3+ characters'; return; }
-  if (!name) { document.getElementById('first-err').textContent='Enter your name'; return; }
+  const nerr = nameError(name);
+  if (nerr) { document.getElementById('first-err').textContent=nerr; return; }
 
   await db.ref('config').set({ accessCode:code, created:Date.now() });
   appCfg = { accessCode:code };
@@ -1609,7 +1639,11 @@ function startApp() {
     renderAll();
     if(detailId&&events[detailId])renderDetail(detailId);
   });
-  db.ref('groups').on('value',s=>{allG={};s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];allG[c.key]={id:c.key,...v};});groups=allG;renderGroups();renderGroupOpts();});
+  db.ref('groups').on('value',s=>{
+    const next={};
+    s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];next[c.key]={id:c.key,...v};});
+    groups=next;renderGroups();renderGroupOpts();
+  });
   db.ref('polls').on('value',s=>{polls={};s.forEach(c=>{polls[c.key]={id:c.key,...c.val()};});renderPolls();if(activePollId&&polls[activePollId])renderPollDetail(activePollId);});
   db.ref('wheels').on('value',s=>{
     wheels={};s.forEach(c=>{wheels[c.key]={id:c.key,...c.val()};});
@@ -1879,7 +1913,6 @@ function buildEventCard(ev,showDate,onDate){
   if(ev.location)meta+=' · '+esc(ev.location);
 
   wrap.innerHTML=`<div class="ev-swipe-bg">Delete</div><div class="ev-swipe-fg"><div class="ev-card" style="margin-bottom:0;border:none"><div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="ev-meta">${meta}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div></div></div>`;
-  wrap.querySelector('.ev-swipe-fg').onclick=()=>openDetail(ev.id);
   attachSwipe(wrap,ev.id);
   return wrap;
 }
@@ -1927,25 +1960,31 @@ function awayDateKeys(a){
 }
 
 /* Build { dateKey: { person: {state, reason} } }
-   state: 'free' | 'busy' | 'away' | 'am' | 'pm'  (am/pm = that half is taken) */
+   state: 'free' | 'busy' | 'away' | 'am' | 'pm'  (am/pm = that half is taken)
+
+   Availability uses EVERY event, not just the ones we're allowed to see.
+   Otherwise a private event would leave that person looking free to
+   everyone else, which is the whole thing the Free tab exists to answer.
+   The title is only shown when the viewer can actually see the event. */
 function buildAvailability(){
   const map={};
   const touch=k=>(map[k]=map[k]||{});
+  const visibleIds=new Set(visibleEvents().map(e=>e.id));
 
-  // Events make their creator and anyone going busy
-  visibleEvents().forEach(ev=>{
+  Object.values(events).forEach(ev=>{
+    const canSee=visibleIds.has(ev.id);
     eventDateRange(ev).forEach(k=>{
       const day=touch(k);
       const people=new Set([ev.creator]);
       if(ev.rsvps)Object.entries(ev.rsvps).forEach(([n,st])=>{if(st==='going')people.add(n);});
       people.forEach(p=>{
         if(day[p]&&day[p].state==='away')return; // away wins
-        day[p]={state:'busy',reason:ev.title};
+        day[p]={state:'busy',reason:canSee?ev.title:'Busy'};
       });
     });
   });
 
-  // Away blocks (always visible to everyone, regardless of event privacy)
+  // Away blocks are always visible to everyone
   Object.values(away).forEach(a=>{
     awayDateKeys(a).forEach(k=>{
       const day=touch(k);
@@ -2068,7 +2107,7 @@ function renderPeopleGrid(){
       else if(st.state==='away')bg='var(--awayc)';
       else if(st.state==='am')cls+=st.isAway?' am-away':' am-busy';
       else if(st.state==='pm')cls+=st.isAway?' pm-away':' pm-busy';
-      const title=esc(u.name+': '+(st.state==='free'?'free':(st.reason||st.state)));
+      const title=escAttr(u.name+': '+(st.state==='free'?'free':(st.reason||st.state)));
       html+=`<td><div class="${cls}" style="${bg?'background:'+bg:''}" title="${title}" onclick="openWhoPanel('${key}')"></div></td>`;
     }
     html+='</tr>';
@@ -2414,7 +2453,7 @@ function renderMemberChecks(sel){
   Object.values(users).forEach(u=>{
     const row=document.createElement('div');row.className='check-row';
     const chk=sel.includes(u.name);
-    row.innerHTML=`<span class="check-row-name"><span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block"></span> ${esc(u.name)}</span><button class="check-box ${chk?'checked':''}" data-name="${esc(u.name)}" onclick="this.classList.toggle('checked')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+    row.innerHTML=`<span class="check-row-name"><span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block"></span> ${esc(u.name)}</span><button class="check-box ${chk?'checked':''}" data-name="${escAttr(u.name)}" onclick="this.classList.toggle('checked')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>`;
     c.appendChild(row);
   });
 }
@@ -2479,8 +2518,10 @@ async function saveEvent(){
     toast('Updated');
   } else {
     data.rsvps={};data.created=Date.now();
-    await db.ref('events').push().set(data);
     if(repeat!=='none'){
+      const seriesId='s'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+      data.seriesId=seriesId;
+      await db.ref('events').push().set(data);
       const base=parseDate(date);
       const spanDays=endDate?Math.round((parseDate(endDate)-base)/86400000):0;
       const step=repeat==='weekly'?7:repeat==='fortnightly'?14:0;
@@ -2496,6 +2537,7 @@ async function saveEvent(){
       }
       toast('Added '+title+' ×12');
     } else {
+      await db.ref('events').push().set(data);
       toast(endDate?'Added multi-day event':'Added');
     }
   }
@@ -2516,10 +2558,35 @@ async function duplicateEvent(){
 async function deleteEvent(){
   const id=document.getElementById('ev-id').value;
   if(!id)return;
-  const yes=await appConfirm('Delete this event?',{okText:'Delete',danger:true});
-  if(!yes)return;
+  const ev=events[id];
+  const siblings=ev&&ev.seriesId
+    ? Object.values(events).filter(e=>e.seriesId===ev.seriesId)
+    : [];
+
+  if(siblings.length>1){
+    const all=await appConfirm(
+      'This repeats. Delete all '+siblings.length+' in the series, or just this one?',
+      {okText:'All '+siblings.length, cancelText:'Just this'}
+    );
+    if(all===null)return;
+    if(all){
+      for(const s of siblings){
+        await db.ref('events/'+s.id).remove();
+        await db.ref('chat/'+s.id).remove();
+      }
+      toast('Deleted '+siblings.length+' events');
+      closePanel('panel-event');closePanel('panel-detail');
+      return;
+    }
+    // "Just this" falls through to the single delete below
+  } else {
+    const yes=await appConfirm('Delete this event?',{okText:'Delete',danger:true});
+    if(!yes)return;
+  }
+
   await db.ref('events/'+id).remove();
   await db.ref('chat/'+id).remove();
+  toast('Deleted');
   closePanel('panel-event');closePanel('panel-detail');
 }
 
@@ -2891,14 +2958,17 @@ async function cyclePollVote(pollId,optIdx){
 async function lockPoll(){
   const p=polls[activePollId];if(!p)return;
   const opts=p.options?Object.values(p.options):[];
+  if(!opts.length)return;
   const votes=p.votes||{};
-  // Find option with most yes votes
   const totals=opts.map(()=>0);
   Object.values(votes).forEach(uv=>{Object.entries(uv).forEach(([i,v])=>{if(v==='yes')totals[+i]++;});});
-  const maxIdx=totals.indexOf(Math.max(...totals));
+  const max=Math.max(...totals);
+  if(max===0){await appAlert('Nobody has voted yes yet');return;}
+  const maxIdx=totals.indexOf(max);
   const yes=await appConfirm('Lock "'+opts[maxIdx].label+'" as the winner?',{okText:'Lock it'});
   if(!yes)return;
   await db.ref('polls/'+activePollId).update({locked:true,lockedOption:maxIdx});
+  toast('Locked in');
 }
 
 /* ==============================================================
@@ -2971,7 +3041,7 @@ function renderWheelItems(){
   const c=document.getElementById('wheel-items-list');c.innerHTML='';
   wheelItems.forEach((item,i)=>{
     const row=document.createElement('div');row.className='wheel-item-row';
-    row.innerHTML=`<input value="${esc(item)}" placeholder="Item ${i+1}" oninput="wheelItems[${i}]=this.value;drawWheel()" style="flex:1;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none"><button class="opt-remove" onclick="wheelItems.splice(${i},1);renderWheelItems();drawWheel()">✕</button>`;
+    row.innerHTML=`<input value="${escAttr(item)}" placeholder="Item ${i+1}" oninput="wheelItems[${i}]=this.value;drawWheel()" style="flex:1;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none"><button class="opt-remove" onclick="wheelItems.splice(${i},1);renderWheelItems();drawWheel()">✕</button>`;
     c.appendChild(row);
   });
 }
@@ -3334,15 +3404,29 @@ function renderSearch(){
    SWIPE TO DELETE
    ============================================================== */
 function attachSwipe(el,eventId){
-  let startX=0,curX=0,dragging=false;
+  let startX=0,startY=0,curX=0,dragging=false,didSwipe=false;
   const fg=el.querySelector('.ev-swipe-fg');
-  el.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;dragging=true;fg.classList.add('swiping');},{passive:true});
+
+  el.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    startX=e.touches[0].clientX;startY=e.touches[0].clientY;
+    curX=0;dragging=true;didSwipe=false;
+    fg.classList.add('swiping');
+  },{passive:true});
+
   el.addEventListener('touchmove',e=>{
     if(!dragging)return;
-    curX=e.touches[0].clientX-startX;
+    const dx=e.touches[0].clientX-startX;
+    const dy=e.touches[0].clientY-startY;
+    // Ignore mostly-vertical movement so page scrolling still works
+    if(Math.abs(dy)>Math.abs(dx)){dragging=false;fg.style.transform='translateX(0)';return;}
+    curX=dx;
+    if(Math.abs(dx)>6)didSwipe=true;
     if(curX<0)fg.style.transform=`translateX(${Math.max(curX,-100)}px)`;
   },{passive:true});
+
   el.addEventListener('touchend',async ()=>{
+    if(!dragging){didSwipe=false;return;}
     dragging=false;fg.classList.remove('swiping');
     if(curX<-70){
       buzz(20);
@@ -3360,6 +3444,14 @@ function attachSwipe(el,eventId){
       fg.style.transform='translateX(0)';
     }
     curX=0;
+    // Clear the swipe flag after the synthetic click would have fired
+    setTimeout(()=>{didSwipe=false;},350);
+  });
+
+  // Swallow the click the browser fires at the end of a swipe
+  fg.addEventListener('click',e=>{
+    if(didSwipe){e.stopPropagation();e.preventDefault();return;}
+    openDetail(eventId);
   });
 }
 
@@ -3423,8 +3515,8 @@ async function saveProfile(){
   const btn=document.getElementById('pf-save-btn');
   err.textContent='';
 
-  if(!newName){err.textContent='Enter a name';return;}
-  if(newName.length>20){err.textContent='Name too long (20 max)';return;}
+  const nerr=nameError(newName);
+  if(nerr){err.textContent=nerr;return;}
 
   const nameChanged=newName!==me.name;
   const colorChanged=newColor!==me.color;
@@ -3549,7 +3641,10 @@ async function saveProfile(){
     // 10. Update local state
     me=newUser;
     localStorage.setItem('cmas-user',JSON.stringify({name:newName}));
+    // Drop the old presence node (its onDisconnect is tied to the old session)
+    try{await db.ref('presence/'+sessionId).remove();}catch(e){}
     sessionId=Math.random().toString(36).slice(2)+Date.now().toString(36);
+    setupPresence();
 
     prog.textContent='';
     buzz(30);
@@ -3763,7 +3858,7 @@ function renderCF(){
   Object.values(users).forEach(u=>{
     if(u.name===me.name)return;
     const row=document.createElement('div');row.className='check-row';
-    row.innerHTML=`<span class="check-row-name"><span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block"></span> ${esc(u.name)}</span><button class="check-box ${cf.includes(u.name)?'checked':''}" onclick="toggleCF('${esc(u.name)}',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+    row.innerHTML=`<span class="check-row-name"><span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block"></span> ${esc(u.name)}</span><button class="check-box ${cf.includes(u.name)?'checked':''}" onclick="toggleCF('${escJs(u.name)}',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>`;
     c.appendChild(row);
   });
 }
@@ -3796,11 +3891,11 @@ function renderMembers(){
     const adminBadge=u.admin?'<span class="admin-badge">Admin</span>':'';
     let actions='';
     if(isAdmin()&&!isSelf){
-      actions+=`<button class="btn btn-sm btn-secondary" onclick="adminResetCode('${esc(u.name)}')">Reset code</button>`;
-      actions+=`<button class="btn btn-sm btn-danger" onclick="adminRemoveUser('${esc(u.name)}')">Remove</button>`;
+      actions+=`<button class="btn btn-sm btn-secondary" onclick="adminResetCode('${escJs(u.name)}')">Reset code</button>`;
+      actions+=`<button class="btn btn-sm btn-danger" onclick="adminRemoveUser('${escJs(u.name)}')">Remove</button>`;
     }
     if(isAdmin()&&!isSelf&&!u.admin){
-      actions+=`<button class="btn btn-sm btn-secondary" onclick="adminPromote('${esc(u.name)}')" title="Make admin" style="padding:5px 8px">👑</button>`;
+      actions+=`<button class="btn btn-sm btn-secondary" onclick="adminPromote('${escJs(u.name)}')" title="Make admin" style="padding:5px 8px">👑</button>`;
     }
     card.innerHTML=`<div class="profile-avatar" style="background:${u.color};width:34px;height:34px;font-size:13px">${initials(u.name)}</div><div class="user-card-info"><div class="user-card-name">${esc(u.name)} ${adminBadge}</div><div class="user-card-meta">Joined ${joined}</div></div><div class="user-card-actions">${actions}</div>`;
     list.appendChild(card);
