@@ -296,6 +296,58 @@ input,select,textarea,button{font-family:var(--font)}
 .admin-badge{font-size:9px;padding:1px 6px;border-radius:6px;background:var(--primary-dim);color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .user-card-actions .btn-sm{padding:5px 10px;font-size:11px}
 
+/* Polls */
+.poll-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.poll-card:active{background:var(--surface-2)}
+.poll-card-type{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:6px;display:inline-block;margin-bottom:6px}
+.poll-card-type.date{background:var(--accent-dim);color:var(--accent)}
+.poll-card-type.general{background:var(--primary-dim);color:var(--primary)}
+.poll-card-title{font-size:15px;font-weight:600}
+.poll-card-meta{font-size:12px;color:var(--text-dim);margin-top:2px}
+.poll-locked{font-size:11px;padding:3px 10px;border-radius:8px;background:var(--success-dim);color:var(--success);font-weight:600;display:inline-block;margin-top:6px}
+
+/* Doodle grid */
+.doodle-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0}
+.doodle{border-collapse:collapse;min-width:100%}
+.doodle th,.doodle td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;min-width:70px}
+.doodle th{font-size:11px;font-weight:600;color:var(--text-dim);position:sticky;top:0;background:var(--surface)}
+.doodle .doodle-name{text-align:left;font-size:13px;font-weight:600;position:sticky;left:0;background:var(--surface);z-index:1;min-width:80px}
+.doodle .doodle-name span{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.doodle-vote{width:32px;height:32px;border-radius:8px;border:2px solid var(--border);background:none;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.doodle-vote.yes{background:var(--success-dim);border-color:var(--success);color:var(--success)}
+.doodle-vote.maybe{background:var(--warning-dim);border-color:var(--warning);color:var(--warning)}
+.doodle-vote.no{background:var(--danger-dim);border-color:var(--danger);color:var(--danger)}
+.doodle-total{font-size:13px;font-weight:700}
+.doodle-total.best{color:var(--success)}
+.doodle-winner th{background:var(--success-dim)!important;color:var(--success)}
+
+/* Option input rows */
+.opt-rows{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.opt-row{display:flex;gap:6px;align-items:center}
+.opt-row input{flex:1}
+.opt-remove{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-faint);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Spin wheel */
+.wheel-container{display:flex;flex-direction:column;align-items:center;padding:16px}
+.wheel-wrap{position:relative;width:280px;height:280px;margin:0 auto}
+.wheel-canvas{width:280px;height:280px;transition:transform 4s cubic-bezier(.2,.8,.3,1)}
+.wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:24px solid var(--primary);z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
+.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:var(--surface);border:3px solid var(--border);border-radius:50%;z-index:1}
+.wheel-result{font-size:20px;font-weight:700;text-align:center;margin:16px 0;min-height:30px;color:var(--primary)}
+.wheel-items{width:100%;margin-top:12px}
+.wheel-item-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.wheel-item-row input{flex:1}
+.wheel-presets{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.wheel-preset{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer}
+.wheel-preset:active{background:var(--surface-3)}
+.wheel-preset-name{font-size:14px;font-weight:600}
+.wheel-preset-meta{font-size:12px;color:var(--text-dim)}
+
+/* Section tabs inside plans screen */
+.section-tabs{display:flex;gap:2px;padding:0 12px 8px;background:var(--bg)}
+.section-tab{padding:6px 14px;border:none;border-radius:8px;background:none;color:var(--text-faint);font:500 13px var(--font);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.section-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
 .loading{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:14px;padding:24px;text-align:center}
 .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin-right:10px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -450,13 +502,29 @@ input,select,textarea,button{font-family:var(--font)}
       <div class="avail-grid" id="avail-grid"></div>
     </div>
 
-    <!-- Plans -->
+    <!-- Plans / Polls / Wheel -->
     <div id="screen-plans" class="screen">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 4px">
         <div style="font-size:17px;font-weight:600">Plans</div>
-        <button class="btn btn-sm btn-primary" onclick="openNewEvent('plan')">+ New Plan</button>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-sm btn-secondary" id="plans-add-poll" onclick="openNewPoll()">+ Poll</button>
+          <button class="btn btn-sm btn-primary" onclick="openNewEvent('plan')">+ Plan</button>
+        </div>
       </div>
-      <div id="plans-list" style="flex:1;overflow-y:auto;padding:0 12px 80px"></div>
+      <div class="section-tabs">
+        <button class="section-tab active" data-section="plans" onclick="switchPlanSection('plans')">Plans</button>
+        <button class="section-tab" data-section="polls" onclick="switchPlanSection('polls')">Polls</button>
+        <button class="section-tab" data-section="wheel" onclick="switchPlanSection('wheel')">Wheel</button>
+      </div>
+      <div id="plans-section-plans" style="flex:1;overflow-y:auto;padding:0 12px 80px">
+        <div id="plans-list"></div>
+      </div>
+      <div id="plans-section-polls" class="hidden" style="flex:1;overflow-y:auto;padding:0 12px 80px">
+        <div id="polls-list"></div>
+      </div>
+      <div id="plans-section-wheel" class="hidden" style="flex:1;overflow-y:auto;padding:0 12px 80px">
+        <div id="wheel-section"></div>
+      </div>
     </div>
 
     <!-- Groups -->
@@ -571,6 +639,96 @@ input,select,textarea,button{font-family:var(--font)}
 </div>
 
 <!-- ============================================================
+     PANEL: New/Edit Poll
+     ============================================================ -->
+<div id="panel-poll" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-poll')"></div>
+  <div class="panel-body">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title" id="panel-poll-title">New Poll</div>
+      <button class="btn-icon" onclick="closePanel('panel-poll')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="panel-scroll">
+      <input type="hidden" id="poll-id">
+      <div class="field"><label>Question</label><input id="poll-title" placeholder="When should we go?" autocomplete="off"></div>
+      <div class="field">
+        <label>Type</label>
+        <select id="poll-type" onchange="pollTypeChanged()">
+          <option value="date">Pick a date</option>
+          <option value="general">General poll</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Options</label>
+        <div id="poll-options" class="opt-rows"></div>
+        <button class="btn btn-sm btn-secondary" style="margin-top:6px" onclick="addPollOption()">+ Add option</button>
+      </div>
+      <div id="poll-err" class="gate-err"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-full" onclick="savePoll()">Create Poll</button>
+        <button id="poll-delete-btn" class="btn btn-danger btn-sm hidden" onclick="deletePoll()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL: Poll Detail (Doodle grid)
+     ============================================================ -->
+<div id="panel-poll-detail" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-poll-detail')"></div>
+  <div class="panel-body" style="height:85vh">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title" id="poll-detail-title">Poll</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-secondary" id="poll-lock-btn" onclick="lockPoll()">Lock winner</button>
+        <button class="btn-icon" id="poll-del-btn2" onclick="deletePoll2()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+        <button class="btn-icon" onclick="closePanel('panel-poll-detail')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    </div>
+    <div class="panel-scroll" id="poll-detail-body"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL: Spin the Wheel
+     ============================================================ -->
+<div id="panel-wheel" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-wheel')"></div>
+  <div class="panel-body" style="height:90vh">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title" id="wheel-panel-title">Spin the Wheel</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-secondary" id="wheel-save-btn" onclick="saveWheel()">Save</button>
+        <button class="btn-icon" onclick="closePanel('panel-wheel')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    </div>
+    <div class="panel-scroll">
+      <div class="wheel-container">
+        <div class="wheel-wrap">
+          <div class="wheel-pointer"></div>
+          <canvas id="wheel-canvas" class="wheel-canvas" width="560" height="560"></canvas>
+          <div class="wheel-center"></div>
+        </div>
+        <div class="wheel-result" id="wheel-result"></div>
+        <button class="btn btn-primary btn-full" onclick="spinWheel()" id="wheel-spin-btn">Spin!</button>
+      </div>
+      <div class="wheel-items">
+        <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:6px">Items on the wheel:</div>
+        <div id="wheel-items-list"></div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <input id="wheel-new-item" placeholder="Add item..." style="flex:1;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')addWheelItem()">
+          <button class="btn btn-sm btn-primary" onclick="addWheelItem()">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      PANEL: Settings
      ============================================================ -->
 <div id="panel-settings" class="panel">
@@ -637,14 +795,13 @@ input,select,textarea,button{font-family:var(--font)}
    FIREBASE CONFIG — replace with your values
    ============================================================== */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBwrrJr7xR_p8ULAGrQMVKn_XIAhdTJ_cY",
-  authDomain: "cmas-social.firebaseapp.com",
-  databaseURL: "https://cmas-social-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "cmas-social",
-  storageBucket: "cmas-social.firebasestorage.app",
-  messagingSenderId: "655550772180",
-  appId: "1:655550772180:web:35eac4d4a7ebe1b5e65c41",
-  measurementId: "G-LPQQ2DTX5D"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 /* ==============================================================
@@ -659,11 +816,12 @@ const MSHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
    STATE
    ============================================================== */
 let db, me, appCfg;
-let users={}, events={}, groups={}, chatMsgs={};
+let users={}, events={}, groups={}, polls={}, wheels={}, chatMsgs={};
 let selDate=todayStr(), calView='week';
 let viewWeekStart=getWeekStart(new Date()), viewMonth=new Date().getMonth(), viewYear=new Date().getFullYear();
 let availMonth=new Date().getMonth(), availYear=new Date().getFullYear();
 let activeTab='calendar', detailId=null, chatRef=null, pendingRecovery=null;
+let activePollId=null, planSection='plans', wheelItems=[], wheelSpinning=false, currentWheelId=null;
 let sessionId=Math.random().toString(36).slice(2)+Date.now().toString(36);
 
 function todayStr(){ const t=new Date(); return dk(t.getFullYear(),t.getMonth(),t.getDate()); }
@@ -857,6 +1015,8 @@ function startApp() {
   db.ref('users').on('value',s=>{users={};s.forEach(c=>{users[c.val().name]=c.val();});renderAll();});
   db.ref('events').on('value',s=>{events={};s.forEach(c=>{events[c.key]={id:c.key,...c.val()};});renderAll();if(detailId&&events[detailId])renderDetail(detailId);});
   db.ref('groups').on('value',s=>{allG={};s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];allG[c.key]={id:c.key,...v};});groups=allG;renderGroups();renderGroupOpts();});
+  db.ref('polls').on('value',s=>{polls={};s.forEach(c=>{polls[c.key]={id:c.key,...c.val()};});renderPolls();if(activePollId&&polls[activePollId])renderPollDetail(activePollId);});
+  db.ref('wheels').on('value',s=>{wheels={};s.forEach(c=>{wheels[c.key]={id:c.key,...c.val()};});renderWheelSection();});
 
   setupPresence();
   renderAll();
@@ -1270,6 +1430,346 @@ async function sendChat(){
   const input=document.getElementById('chat-input');
   const text=input.value.trim();if(!text||!detailId)return;input.value='';
   await db.ref('chat/'+detailId+'/messages').push({author:me.name,text,ts:Date.now()});
+}
+
+/* ==============================================================
+   PLAN SECTION TABS
+   ============================================================== */
+function switchPlanSection(s){
+  planSection=s;
+  document.querySelectorAll('.section-tab').forEach(b=>b.classList.toggle('active',b.dataset.section===s));
+  ['plans','polls','wheel'].forEach(id=>document.getElementById('plans-section-'+id).classList.toggle('hidden',id!==s));
+}
+
+/* ==============================================================
+   POLLS CRUD
+   ============================================================== */
+function openNewPoll(){
+  document.getElementById('panel-poll-title').textContent='New Poll';
+  document.getElementById('poll-id').value='';
+  document.getElementById('poll-title').value='';
+  document.getElementById('poll-type').value='date';
+  document.getElementById('poll-err').textContent='';
+  document.getElementById('poll-delete-btn').classList.add('hidden');
+  pollTypeChanged();
+  openPanel('panel-poll');
+}
+
+function pollTypeChanged(){
+  const type=document.getElementById('poll-type').value;
+  const c=document.getElementById('poll-options');c.innerHTML='';
+  if(type==='date'){
+    for(let i=0;i<3;i++){addPollOptionRow('date','');}
+  } else {
+    for(let i=0;i<3;i++){addPollOptionRow('text','');}
+  }
+}
+
+function addPollOption(){
+  const type=document.getElementById('poll-type').value;
+  addPollOptionRow(type==='date'?'date':'text','');
+}
+
+function addPollOptionRow(inputType,val){
+  const c=document.getElementById('poll-options');
+  const row=document.createElement('div');row.className='opt-row';
+  row.innerHTML=`<input type="${inputType}" value="${val}" placeholder="${inputType==='date'?'':'Option...'}" class="poll-opt-input" style="padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none"><button class="opt-remove" onclick="this.parentElement.remove()">✕</button>`;
+  c.appendChild(row);
+}
+
+async function savePoll(){
+  const id=document.getElementById('poll-id').value;
+  const title=document.getElementById('poll-title').value.trim();
+  const type=document.getElementById('poll-type').value;
+  if(!title){document.getElementById('poll-err').textContent='Enter a question';return;}
+
+  const inputs=document.querySelectorAll('#poll-options .poll-opt-input');
+  const options={};let idx=0;
+  inputs.forEach(inp=>{
+    const v=inp.value.trim();
+    if(v){options[idx]={label:v};idx++;}
+  });
+  if(idx<2){document.getElementById('poll-err').textContent='Need at least 2 options';return;}
+
+  const data={title,type,options,creator:me.name,updated:Date.now()};
+  if(id){
+    await db.ref('polls/'+id).update(data);
+  } else {
+    data.votes={};data.locked=false;data.lockedOption=null;data.created=Date.now();
+    await db.ref('polls').push().set(data);
+  }
+  closePanel('panel-poll');
+}
+
+async function deletePoll(){
+  const id=document.getElementById('poll-id').value;
+  if(!id||!confirm('Delete this poll?'))return;
+  await db.ref('polls/'+id).remove();closePanel('panel-poll');
+}
+
+async function deletePoll2(){
+  if(!activePollId||!confirm('Delete this poll?'))return;
+  await db.ref('polls/'+activePollId).remove();closePanel('panel-poll-detail');activePollId=null;
+}
+
+function renderPolls(){
+  const c=document.getElementById('polls-list');
+  const pl=Object.values(polls).sort((a,b)=>(b.created||0)-(a.created||0));
+  if(!pl.length){c.innerHTML='<div class="day-empty">No polls yet. Create one to find the best date or option.</div>';return;}
+  c.innerHTML='';
+  pl.forEach(p=>{
+    const card=document.createElement('div');card.className='poll-card';
+    card.onclick=()=>openPollDetail(p.id);
+    const opts=p.options?Object.values(p.options):[];
+    const voteCount=p.votes?Object.keys(p.votes).length:0;
+    let locked='';
+    if(p.locked&&p.lockedOption!==null){
+      const winOpt=opts[p.lockedOption];
+      locked=`<div class="poll-locked">✓ Locked: ${esc(winOpt?winOpt.label:'')}</div>`;
+    }
+    card.innerHTML=`<span class="poll-card-type ${p.type}">${p.type==='date'?'📅 Date Poll':'📊 Poll'}</span><div class="poll-card-title">${esc(p.title)}</div><div class="poll-card-meta">${opts.length} options · ${voteCount} voted · by ${esc(p.creator)}</div>${locked}`;
+    c.appendChild(card);
+  });
+}
+
+/* ==============================================================
+   POLL DETAIL (Doodle Grid)
+   ============================================================== */
+function openPollDetail(id){
+  activePollId=id;renderPollDetail(id);openPanel('panel-poll-detail');
+}
+
+function renderPollDetail(id){
+  const p=polls[id];if(!p)return;
+  document.getElementById('poll-detail-title').textContent=p.title;
+  const isCreator=p.creator===me.name;
+  document.getElementById('poll-lock-btn').classList.toggle('hidden',!isCreator||p.locked);
+  document.getElementById('poll-del-btn2').classList.toggle('hidden',!isCreator);
+
+  const opts=p.options?Object.values(p.options):[];
+  const votes=p.votes||{};
+  const voterNames=Object.keys(votes);
+  // Ensure current user is in the grid
+  if(!voterNames.includes(me.name))voterNames.push(me.name);
+  // All known users who haven't voted
+  Object.keys(users).forEach(n=>{if(!voterNames.includes(n))voterNames.push(n);});
+
+  const body=document.getElementById('poll-detail-body');
+  let html='<div class="doodle-wrap"><table class="doodle"><thead><tr><th class="doodle-name"></th>';
+  opts.forEach((o,i)=>{
+    const label=p.type==='date'?formatDateLabel(o.label):esc(o.label);
+    html+=`<th>${label}</th>`;
+  });
+  html+='</tr></thead><tbody>';
+
+  // Totals
+  const totals=opts.map(()=>0);
+  const maybeTotals=opts.map(()=>0);
+
+  voterNames.forEach(name=>{
+    const uv=votes[name]||{};
+    const u=users[name]||{};
+    const isSelf=name===me.name;
+    html+=`<tr><td class="doodle-name"><span style="background:${u.color||'#888'}"></span>${esc(name)}</td>`;
+    opts.forEach((o,i)=>{
+      const v=uv[i]||'';
+      if(v==='yes')totals[i]++;
+      if(v==='maybe')maybeTotals[i]++;
+      const icon=v==='yes'?'✓':v==='maybe'?'?':v==='no'?'✕':'';
+      if(isSelf&&!p.locked){
+        html+=`<td><button class="doodle-vote ${v}" onclick="cyclePollVote('${id}',${i})">${icon}</button></td>`;
+      } else {
+        html+=`<td><span class="doodle-vote ${v}" style="cursor:default">${icon}</span></td>`;
+      }
+    });
+    html+='</tr>';
+  });
+
+  // Totals row
+  const maxTotal=Math.max(...totals);
+  html+='<tr style="border-top:2px solid var(--border)"><td class="doodle-name" style="font-weight:700;color:var(--text-dim)">Total ✓</td>';
+  opts.forEach((o,i)=>{
+    const isBest=totals[i]===maxTotal&&maxTotal>0;
+    html+=`<td><span class="doodle-total ${isBest?'best':''}">${totals[i]}${maybeTotals[i]?'<span style="color:var(--warning);font-weight:400;font-size:11px"> +'+maybeTotals[i]+'?</span>':''}</span></td>`;
+  });
+  html+='</tr>';
+
+  if(p.locked&&p.lockedOption!==null){
+    html+='<tr class="doodle-winner"><th class="doodle-name" style="color:var(--success);font-weight:700">Winner</th>';
+    opts.forEach((o,i)=>{
+      html+=`<th>${i==p.lockedOption?'✓ Locked':''}</th>`;
+    });
+    html+='</tr>';
+  }
+
+  html+='</tbody></table></div>';
+
+  if(!p.locked&&me.name===p.creator){
+    html+='<p style="font-size:12px;color:var(--text-faint);margin-top:8px">Tap each cell to vote: ✓ yes, ? maybe, ✕ no. As the creator, you can lock the winning option.</p>';
+  } else if(!p.locked){
+    html+='<p style="font-size:12px;color:var(--text-faint);margin-top:8px">Tap each cell to vote: ✓ yes, ? maybe, ✕ no.</p>';
+  }
+
+  body.innerHTML=html;
+}
+
+function formatDateLabel(s){
+  try{const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});}catch(e){return esc(s);}
+}
+
+async function cyclePollVote(pollId,optIdx){
+  const p=polls[pollId];if(!p||p.locked)return;
+  const current=(p.votes&&p.votes[me.name]&&p.votes[me.name][optIdx])||'';
+  const next=current===''?'yes':current==='yes'?'maybe':current==='maybe'?'no':'';
+  if(next){
+    await db.ref('polls/'+pollId+'/votes/'+me.name+'/'+optIdx).set(next);
+  } else {
+    await db.ref('polls/'+pollId+'/votes/'+me.name+'/'+optIdx).remove();
+  }
+}
+
+async function lockPoll(){
+  const p=polls[activePollId];if(!p)return;
+  const opts=p.options?Object.values(p.options):[];
+  const votes=p.votes||{};
+  // Find option with most yes votes
+  const totals=opts.map(()=>0);
+  Object.values(votes).forEach(uv=>{Object.entries(uv).forEach(([i,v])=>{if(v==='yes')totals[+i]++;});});
+  const maxIdx=totals.indexOf(Math.max(...totals));
+  if(!confirm('Lock "'+opts[maxIdx].label+'" as the winner?'))return;
+  await db.ref('polls/'+activePollId).update({locked:true,lockedOption:maxIdx});
+}
+
+/* ==============================================================
+   SPIN THE WHEEL
+   ============================================================== */
+function renderWheelSection(){
+  const c=document.getElementById('wheel-section');
+  const wl=Object.values(wheels).sort((a,b)=>(b.created||0)-(a.created||0));
+  let html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:14px;font-weight:600;color:var(--text-dim)">Saved wheels</div><button class="btn btn-sm btn-primary" onclick="openNewWheel()">+ New Wheel</button></div>';
+  if(!wl.length){
+    html+='<div class="day-empty">No wheels yet. Create one and add your coffee spots, restaurants, whatever you want to randomise.</div>';
+  } else {
+    html+='<div class="wheel-presets">';
+    wl.forEach(w=>{
+      const items=w.items?Object.values(w.items):[];
+      html+=`<div class="wheel-preset" onclick="openWheel('${w.id}')"><div><div class="wheel-preset-name">${esc(w.name)}</div><div class="wheel-preset-meta">${items.length} items · by ${esc(w.creator)}</div></div><span style="font-size:20px">🎡</span></div>`;
+    });
+    html+='</div>';
+  }
+  c.innerHTML=html;
+}
+
+function openNewWheel(){
+  currentWheelId=null;wheelItems=['','',''];
+  document.getElementById('wheel-panel-title').textContent='New Wheel';
+  document.getElementById('wheel-result').textContent='';
+  renderWheelItems();drawWheel();openPanel('panel-wheel');
+}
+
+function openWheel(id){
+  const w=wheels[id];if(!w)return;
+  currentWheelId=id;
+  wheelItems=w.items?Object.values(w.items):[];
+  document.getElementById('wheel-panel-title').textContent=w.name;
+  document.getElementById('wheel-result').textContent='';
+  renderWheelItems();drawWheel();openPanel('panel-wheel');
+}
+
+function renderWheelItems(){
+  const c=document.getElementById('wheel-items-list');c.innerHTML='';
+  wheelItems.forEach((item,i)=>{
+    const row=document.createElement('div');row.className='wheel-item-row';
+    row.innerHTML=`<input value="${esc(item)}" placeholder="Item ${i+1}" oninput="wheelItems[${i}]=this.value;drawWheel()" style="flex:1;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none"><button class="opt-remove" onclick="wheelItems.splice(${i},1);renderWheelItems();drawWheel()">✕</button>`;
+    c.appendChild(row);
+  });
+}
+
+function addWheelItem(){
+  const inp=document.getElementById('wheel-new-item');
+  const val=inp.value.trim();
+  if(val){wheelItems.push(val);inp.value='';}else{wheelItems.push('');}
+  renderWheelItems();drawWheel();
+}
+
+async function saveWheel(){
+  const items=wheelItems.filter(i=>i.trim());
+  if(items.length<2){alert('Add at least 2 items');return;}
+  const name=prompt('Wheel name:',currentWheelId&&wheels[currentWheelId]?wheels[currentWheelId].name:'');
+  if(!name)return;
+  const itemsObj={};items.forEach((v,i)=>{itemsObj[i]=v;});
+  if(currentWheelId){
+    await db.ref('wheels/'+currentWheelId).update({name,items:itemsObj});
+  } else {
+    const ref=await db.ref('wheels').push();
+    await ref.set({name,items:itemsObj,creator:me.name,created:Date.now()});
+    currentWheelId=ref.key;
+  }
+  document.getElementById('wheel-panel-title').textContent=name;
+}
+
+const WHEEL_COLORS=['#f06b6b','#f0a06b','#f0d76b','#6bf07a','#6bf0d7','#6bb8f0','#8b6bf0','#d76bf0','#f06bb8','#f09b6b','#6bf0a0','#6b8bf0','#c06bf0','#6bf0e0'];
+
+function drawWheel(){
+  const canvas=document.getElementById('wheel-canvas');
+  const ctx=canvas.getContext('2d');
+  const items=wheelItems.filter(i=>i.trim());
+  const cx=280,cy=280,r=260;
+  ctx.clearRect(0,0,560,560);
+  if(items.length===0){
+    ctx.fillStyle='#333';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#888';ctx.font='600 20px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';ctx.fillText('Add items below',cx,cy);
+    return;
+  }
+  const slice=Math.PI*2/items.length;
+  items.forEach((item,i)=>{
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,i*slice-Math.PI/2,(i+1)*slice-Math.PI/2);
+    ctx.closePath();
+    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;ctx.stroke();
+    // Label
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(i*slice+slice/2-Math.PI/2);
+    ctx.fillStyle='#fff';ctx.font='600 13px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';
+    const label=item.length>14?item.slice(0,13)+'…':item;
+    ctx.fillText(label,0,-r*0.6);
+    ctx.restore();
+  });
+}
+
+function spinWheel(){
+  if(wheelSpinning)return;
+  const items=wheelItems.filter(i=>i.trim());
+  if(items.length<2){alert('Need at least 2 items');return;}
+
+  wheelSpinning=true;
+  document.getElementById('wheel-result').textContent='';
+  const canvas=document.getElementById('wheel-canvas');
+  const spins=5+Math.random()*5;
+  const extraDeg=Math.random()*360;
+  const totalDeg=spins*360+extraDeg;
+
+  canvas.style.transition='none';
+  canvas.style.transform='rotate(0deg)';
+  // Force reflow
+  canvas.offsetHeight;
+  canvas.style.transition='transform 4s cubic-bezier(.2,.8,.3,1)';
+  canvas.style.transform=`rotate(${totalDeg}deg)`;
+
+  setTimeout(()=>{
+    const finalDeg=totalDeg%360;
+    // Pointer is at top (0 deg). Wheel rotated clockwise by finalDeg.
+    // The slice at the pointer: (360 - finalDeg) mapped to items
+    const slice=360/items.length;
+    const idx=Math.floor(((360-finalDeg)%360)/slice);
+    document.getElementById('wheel-result').textContent='🎉 '+items[idx];
+    wheelSpinning=false;
+    // Reset rotation without animation for next spin
+    setTimeout(()=>{
+      canvas.style.transition='none';
+      canvas.style.transform=`rotate(${finalDeg}deg)`;
+    },100);
+  },4200);
 }
 
 /* ==============================================================
