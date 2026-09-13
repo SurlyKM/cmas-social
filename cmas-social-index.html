@@ -190,15 +190,47 @@ input,select,textarea,button{font-family:var(--font)}
 /* ============================================================
    AVAILABILITY VIEW
    ============================================================ */
-.avail-legend{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;overflow-x:auto}
-.avail-chip{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim);white-space:nowrap}
-.avail-chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.avail-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:2px}
-.avail-cell{min-height:54px;padding:3px;border-radius:8px;cursor:pointer;text-align:center}
-.avail-cell.other{opacity:.2}
-.avail-cell-num{font-size:10px;font-weight:600;margin-bottom:1px}
-.avail-pips{display:flex;flex-wrap:wrap;justify-content:center;gap:2px}
-.avail-pip{width:7px;height:7px;border-radius:50%;border:1px solid var(--bg)}
+:root{--free:#1D9E75;--part:#EF9F27;--busy:#E24B4A;--awayc:#8b6bf0}
+.avail-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 12px 10px}
+.heat-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:3px}
+.heat-cell{min-height:52px;border-radius:8px;padding:5px 2px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;justify-content:center;transition:transform .1s}
+.heat-cell:active{transform:scale(.94)}
+.heat-cell.other{opacity:.22}
+.heat-num{font-size:13px;font-weight:700;line-height:1.1}
+.heat-count{font-size:9px;font-weight:600;margin-top:1px;opacity:.9}
+.heat-cell.today{box-shadow:inset 0 0 0 2px var(--primary)}
+.heat-legend{display:flex;align-items:center;justify-content:center;gap:6px;padding:14px 12px 4px;font-size:11px;color:var(--text-faint)}
+.heat-legend-scale{display:flex;gap:2px}
+.heat-legend-box{width:18px;height:11px;border-radius:2px}
+.grid-nav{display:flex;align-items:center;justify-content:center;gap:10px;padding:0 12px 8px;font-size:12px;color:var(--text-dim)}
+.grid-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 12px}
+.pgrid{border-collapse:separate;border-spacing:0;width:100%}
+.pgrid th{font-size:10px;font-weight:600;color:var(--text-faint);padding:0 0 6px;text-align:center;text-transform:uppercase;letter-spacing:.03em}
+.pgrid th.today-col{color:var(--primary)}
+.pgrid th:first-child{text-align:left;width:74px;min-width:74px}
+.pgrid td{padding:2px}
+.pgrid td:first-child{padding-right:8px}
+.pname{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:74px}
+.pname i{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.pcell{height:26px;border-radius:5px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pcell.am-busy{background:linear-gradient(to bottom,var(--busy) 50%,var(--free) 50%)}
+.pcell.pm-busy{background:linear-gradient(to bottom,var(--free) 50%,var(--busy) 50%)}
+.pcell.am-away{background:linear-gradient(to bottom,var(--awayc) 50%,var(--free) 50%)}
+.pcell.pm-away{background:linear-gradient(to bottom,var(--free) 50%,var(--awayc) 50%)}
+.grid-legend{display:flex;justify-content:center;gap:12px;padding:12px;font-size:11px;color:var(--text-dim);flex-wrap:wrap}
+.grid-legend .gl{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.who-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);background:var(--surface-2);border:1px solid var(--border);margin-bottom:5px}
+.who-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.who-name{font-size:14px;font-weight:600;flex:1;min-width:0}
+.who-status{font-size:12px;font-weight:600;padding:3px 10px;border-radius:10px;flex-shrink:0}
+.who-reason{font-size:11px;color:var(--text-faint);margin-top:1px;font-weight:400}
+.away-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px}
+.away-item-info{flex:1;min-width:0}
+.away-item-when{font-size:14px;font-weight:600}
+.away-item-detail{font-size:12px;color:var(--text-dim);margin-top:1px}
+.part-pills{display:flex;gap:6px}
+.part-pill{flex:1;padding:9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--text-dim);font:600 12px var(--font);cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent}
+.part-pill.active{background:var(--primary);border-color:var(--primary);color:#fff}
 
 /* ============================================================
    PANELS (bottom sheets)
@@ -615,9 +647,30 @@ input,select,textarea,button{font-family:var(--font)}
           <button class="btn-icon" onclick="availNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
         </div>
       </div>
-      <div id="avail-legend" class="avail-legend"></div>
-      <div class="month-weekdays" id="avail-weekdays"></div>
-      <div class="avail-grid" id="avail-grid"></div>
+      <div class="avail-controls">
+        <div class="view-toggle" id="avail-view-toggle">
+          <button class="view-toggle-btn active" data-av="heat" onclick="setAvailView('heat')">Heatmap</button>
+          <button class="view-toggle-btn" data-av="grid" onclick="setAvailView('grid')">Grid</button>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="openAwayPanel()">I'm away</button>
+      </div>
+
+      <div id="avail-heat" style="flex:1;overflow-y:auto;padding-bottom:80px">
+        <div class="month-weekdays" id="avail-weekdays"></div>
+        <div class="heat-grid" id="heat-grid"></div>
+        <div class="heat-legend" id="heat-legend"></div>
+      </div>
+
+      <div id="avail-gridview" class="hidden" style="flex:1;overflow-y:auto;padding-bottom:80px">
+        <div class="grid-nav" id="grid-nav"></div>
+        <div class="grid-wrap"><div id="people-grid"></div></div>
+        <div class="grid-legend">
+          <span><i class="gl" style="background:var(--free)"></i>Free</span>
+          <span><i class="gl" style="background:var(--part)"></i>Part day</span>
+          <span><i class="gl" style="background:var(--busy)"></i>Busy</span>
+          <span><i class="gl" style="background:var(--awayc)"></i>Away</span>
+        </div>
+      </div>
     </div>
 
     <!-- Plans / Polls / Wheel -->
@@ -860,6 +913,7 @@ input,select,textarea,button{font-family:var(--font)}
     <div class="panel-header">
       <div class="panel-title" id="wheel-panel-title">Spin the Wheel</div>
       <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-secondary" onclick="renameCurrentWheel()">Rename</button>
         <button class="btn btn-sm btn-secondary" id="wheel-save-btn" onclick="saveWheel()">Save</button>
         <button class="btn-icon" onclick="closePanel('panel-wheel')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
@@ -883,6 +937,77 @@ input,select,textarea,button{font-family:var(--font)}
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL: My away blocks
+     ============================================================ -->
+<div id="panel-away" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-away')"></div>
+  <div class="panel-body" style="max-height:88vh">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title">When I'm away</div>
+      <button class="btn-icon" onclick="closePanel('panel-away')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="panel-scroll">
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px">These only show in the Free tab so everyone can see your availability. They don't appear as events.</p>
+      <input type="hidden" id="aw-id">
+      <div class="field"><label>Reason <span style="text-transform:none;font-weight:400;color:var(--text-faint)">(optional)</span></label><input id="aw-reason" placeholder="Holiday, work, etc" autocomplete="off"></div>
+      <div class="field">
+        <label>From</label>
+        <div class="date-chips" id="aw-date-chips"></div>
+        <input id="aw-date" type="date" style="margin-top:6px" onchange="renderAwayEndChips();updateAwayHint()">
+      </div>
+      <div class="field">
+        <label>Part of day</label>
+        <div class="part-pills" id="aw-part-pills"></div>
+      </div>
+      <div class="field">
+        <div class="multiday-toggle" id="aw-multi-btn" onclick="toggleAwayMulti()" style="cursor:pointer">
+          <span class="multiday-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+          <span>More than one day</span>
+        </div>
+        <div id="aw-end-wrap" class="hidden" style="margin-top:8px">
+          <div class="date-chips" id="aw-end-chips"></div>
+          <input id="aw-enddate" type="date" style="margin-top:6px" onchange="updateAwayHint()">
+        </div>
+      </div>
+      <div class="field">
+        <label>Repeat</label>
+        <div class="repeat-pills" id="aw-repeat-pills"></div>
+      </div>
+      <div id="aw-hint" style="font-size:12px;color:var(--accent);min-height:16px;margin-bottom:6px"></div>
+      <div id="aw-err" class="gate-err"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-full" onclick="saveAway()">Save</button>
+        <button id="aw-cancel-btn" class="btn btn-secondary btn-sm hidden" onclick="resetAwayForm()">Cancel</button>
+      </div>
+
+      <div style="margin-top:22px">
+        <div class="settings-heading">Your away blocks</div>
+        <div id="away-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL: Who's free on a day
+     ============================================================ -->
+<div id="panel-who" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-who')"></div>
+  <div class="panel-body" style="max-height:80vh">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title" id="who-title">Who's free</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-primary" id="who-plan-btn" onclick="planFromWho()">+ Plan this day</button>
+        <button class="btn-icon" onclick="closePanel('panel-who')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    </div>
+    <div class="panel-scroll" id="who-body"></div>
   </div>
 </div>
 
@@ -1273,12 +1398,14 @@ const MSHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
    STATE
    ============================================================== */
 let db, me, appCfg;
-let users={}, events={}, groups={}, polls={}, wheels={}, chatMsgs={};
+let users={}, events={}, groups={}, polls={}, wheels={}, away={}, chatMsgs={};
 let selDate=todayStr(), calView='week';
 let viewWeekStart=getWeekStart(new Date()), viewMonth=new Date().getMonth(), viewYear=new Date().getFullYear();
 let availMonth=new Date().getMonth(), availYear=new Date().getFullYear();
 let activeTab='calendar', detailId=null, chatRef=null, pendingRecovery=null;
 let activePollId=null, planSection='plans', wheelItems=[], wheelSpinning=false, currentWheelId=null;
+let availView=localStorage.getItem('cmas-availview')||'heat';
+let gridWeekStart=getWeekStart(new Date());
 let sessionId=Math.random().toString(36).slice(2)+Date.now().toString(36);
 
 function todayStr(){ const t=new Date(); return dk(t.getFullYear(),t.getMonth(),t.getDate()); }
@@ -1487,7 +1614,14 @@ function startApp() {
     if(detailId&&events[detailId]&&!evWheelSpinning)renderDetailWheel(detailId);
   });
 
+  db.ref('away').on('value',s=>{
+    away={};s.forEach(c=>{away[c.key]={id:c.key,...c.val()};});
+    renderAvail();
+    if(document.getElementById('panel-away').classList.contains('open'))renderAwayList();
+  });
+
   setupPresence();
+  setAvailView(availView);
   renderAll();
 }
 
@@ -1527,7 +1661,7 @@ function switchTab(tab){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   document.getElementById('cal-view-toggle').classList.toggle('hidden',tab!=='calendar');
-  document.getElementById('fab').classList.toggle('hidden',tab==='groups');
+  document.getElementById('fab').classList.toggle('hidden',tab==='groups'||tab==='avail');
   renderAll();
 }
 
@@ -1764,45 +1898,465 @@ function renderDayList(containerId,dateKey){
 }
 
 /* ==============================================================
-   AVAILABILITY
+   AVAILABILITY ENGINE
    ============================================================== */
-function renderAvail(){
-  document.getElementById('avail-label').textContent=MNAMES[availMonth]+' '+availYear;
-  document.getElementById('avail-weekdays').innerHTML=WDAYS.map(d=>`<div class="month-weekday">${d}</div>`).join('');
 
-  const legend=document.getElementById('avail-legend');legend.innerHTML='';
-  Object.values(users).forEach(u=>{
-    const item=document.createElement('div');item.className='avail-chip';
-    item.innerHTML=`<div class="avail-chip-dot" style="background:${u.color}"></div>${esc(u.name)}`;
-    legend.appendChild(item);
-  });
+/* Expand an away block into the date keys it covers, honouring repeat */
+function awayDateKeys(a){
+  const out=new Set();
+  const base=parseDate(a.date);
+  const end=a.endDate&&a.endDate>a.date?parseDate(a.endDate):base;
+  const spanDays=Math.round((end-base)/86400000);
+  const rep=a.repeat||'none';
+  const occurrences=rep==='none'?1:26;
+  for(let i=0;i<occurrences;i++){
+    let start;
+    if(rep==='monthly')start=new Date(base.getFullYear(),base.getMonth()+i,base.getDate());
+    else if(rep==='weekly')start=addDays(base,7*i);
+    else if(rep==='fortnightly')start=addDays(base,14*i);
+    else start=base;
+    for(let d=0;d<=spanDays;d++){
+      const cur=addDays(start,d);
+      out.add(dk(cur.getFullYear(),cur.getMonth(),cur.getDate()));
+    }
+  }
+  return out;
+}
 
-  const grid=document.getElementById('avail-grid');
-  const days=getMonthDays(availYear,availMonth);
-  const evs=visibleEvents();
-  const busyMap={};
-  evs.forEach(ev=>{
-    const range=eventDateRange(ev);
-    range.forEach(dkey=>{
-      const s=busyMap[dkey]=busyMap[dkey]||new Set();
-      s.add(ev.creator);
-      if(ev.rsvps)Object.entries(ev.rsvps).forEach(([n,st])=>{if(st==='going')s.add(n);});
+/* Build { dateKey: { person: {state, reason} } }
+   state: 'free' | 'busy' | 'away' | 'am' | 'pm'  (am/pm = that half is taken) */
+function buildAvailability(){
+  const map={};
+  const touch=k=>(map[k]=map[k]||{});
+
+  // Events make their creator and anyone going busy
+  visibleEvents().forEach(ev=>{
+    eventDateRange(ev).forEach(k=>{
+      const day=touch(k);
+      const people=new Set([ev.creator]);
+      if(ev.rsvps)Object.entries(ev.rsvps).forEach(([n,st])=>{if(st==='going')people.add(n);});
+      people.forEach(p=>{
+        if(day[p]&&day[p].state==='away')return; // away wins
+        day[p]={state:'busy',reason:ev.title};
+      });
     });
   });
+
+  // Away blocks (always visible to everyone, regardless of event privacy)
+  Object.values(away).forEach(a=>{
+    awayDateKeys(a).forEach(k=>{
+      const day=touch(k);
+      const part=a.part||'all';
+      const state=part==='all'?'away':part;
+      day[a.person]={state,reason:a.reason||'Away',isAway:true,part};
+    });
+  });
+
+  return map;
+}
+
+function personState(availMap,dateKey,name){
+  const day=availMap[dateKey];
+  if(!day||!day[name])return {state:'free'};
+  return day[name];
+}
+
+function freeCountOn(availMap,dateKey,userList){
+  let n=0;
+  userList.forEach(u=>{
+    const s=personState(availMap,dateKey,u.name).state;
+    if(s==='free')n++;
+  });
+  return n;
+}
+
+/* ==============================================================
+   FREE TAB — view switching
+   ============================================================== */
+function setAvailView(v){
+  availView=v;
+  localStorage.setItem('cmas-availview',v);
+  document.querySelectorAll('#avail-view-toggle .view-toggle-btn').forEach(b=>b.classList.toggle('active',b.dataset.av===v));
+  document.getElementById('avail-heat').classList.toggle('hidden',v!=='heat');
+  document.getElementById('avail-gridview').classList.toggle('hidden',v!=='grid');
+  renderAvail();
+}
+
+function renderAvail(){
+  if(availView==='grid')renderPeopleGrid();
+  else renderHeatmap();
+}
+
+/* ---------- Option A: heatmap ---------- */
+const HEAT_STOPS=['#2a2a3a','#0F6E56','#1D9E75','#3FBF90','#5DCAA5','#9FE1CB'];
+
+function heatColor(free,total){
+  if(total===0)return HEAT_STOPS[0];
+  const r=free/total;
+  if(r===0)return HEAT_STOPS[0];
+  if(r<=0.25)return HEAT_STOPS[1];
+  if(r<=0.5)return HEAT_STOPS[2];
+  if(r<=0.7)return HEAT_STOPS[3];
+  if(r<1)return HEAT_STOPS[4];
+  return HEAT_STOPS[5];
+}
+function heatText(free,total){
+  const r=total?free/total:0;
+  return r>0.5?'#04342C':'#e8f5ef';
+}
+
+function renderHeatmap(){
+  document.getElementById('avail-label').textContent=MNAMES[availMonth]+' '+availYear;
+  document.getElementById('avail-weekdays').innerHTML=WDAYS.map(d=>`<div class="month-weekday">${d}</div>`).join('');
+  const grid=document.getElementById('heat-grid');
+  const days=getMonthDays(availYear,availMonth);
+  const availMap=buildAvailability();
   const ulist=Object.values(users);
+  const total=ulist.length;
+  const today=todayStr();
+
   grid.innerHTML='';
   days.forEach(d=>{
     const key=dk(d.y,d.m,d.day);
-    const cell=document.createElement('div');cell.className='avail-cell'+(d.other?' other':'');
-    let html=`<div class="avail-cell-num">${d.day}</div><div class="avail-pips">`;
-    const busy=busyMap[key]||new Set();
-    ulist.forEach(u=>{html+=`<div class="avail-pip" style="background:${busy.has(u.name)?u.color:'transparent'};border-color:${u.color}" title="${u.name}: ${busy.has(u.name)?'busy':'free'}"></div>`;});
-    html+='</div>';cell.innerHTML=html;grid.appendChild(cell);
+    const free=freeCountOn(availMap,key,ulist);
+    const cell=document.createElement('div');
+    cell.className='heat-cell'+(d.other?' other':'')+(key===today?' today':'');
+    cell.style.background=heatColor(free,total);
+    const txt=heatText(free,total);
+    cell.innerHTML=`<div class="heat-num" style="color:${txt}">${d.day}</div><div class="heat-count" style="color:${txt}">${free}/${total}</div>`;
+    cell.onclick=()=>{buzz(5);openWhoPanel(key);};
+    grid.appendChild(cell);
+  });
+
+  const lg=document.getElementById('heat-legend');
+  lg.innerHTML='<span>Nobody free</span><div class="heat-legend-scale">'+
+    HEAT_STOPS.map(c=>`<div class="heat-legend-box" style="background:${c}"></div>`).join('')+
+    '</div><span>All free</span>';
+}
+
+/* ---------- Option B: people grid ---------- */
+function renderPeopleGrid(){
+  const start=gridWeekStart;
+  const end=addDays(start,6);
+  document.getElementById('avail-label').textContent=
+    start.getDate()+' '+MSHORT[start.getMonth()]+' - '+end.getDate()+' '+MSHORT[end.getMonth()];
+
+  const availMap=buildAvailability();
+  const ulist=Object.values(users).sort((a,b)=>a.name.localeCompare(b.name));
+  const today=todayStr();
+
+  let html='<table class="pgrid"><thead><tr><th></th>';
+  for(let i=0;i<7;i++){
+    const d=addDays(start,i);
+    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    html+=`<th class="${key===today?'today-col':''}">${WDAYS[i]}<br>${d.getDate()}</th>`;
+  }
+  html+='</tr></thead><tbody>';
+
+  ulist.forEach(u=>{
+    html+=`<tr><td><div class="pname"><i style="background:${u.color}"></i>${esc(u.name)}</div></td>`;
+    for(let i=0;i<7;i++){
+      const d=addDays(start,i);
+      const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
+      const st=personState(availMap,key,u.name);
+      let cls='pcell',bg='';
+      if(st.state==='free')bg='var(--free)';
+      else if(st.state==='busy')bg='var(--busy)';
+      else if(st.state==='away')bg='var(--awayc)';
+      else if(st.state==='am')cls+=st.isAway?' am-away':' am-busy';
+      else if(st.state==='pm')cls+=st.isAway?' pm-away':' pm-busy';
+      const title=esc(u.name+': '+(st.state==='free'?'free':(st.reason||st.state)));
+      html+=`<td><div class="${cls}" style="${bg?'background:'+bg:''}" title="${title}" onclick="openWhoPanel('${key}')"></div></td>`;
+    }
+    html+='</tr>';
+  });
+
+  html+='</tbody></table>';
+  document.getElementById('people-grid').innerHTML=html;
+
+  // Free-count footer row
+  let counts='<table class="pgrid" style="margin-top:6px"><tr><td><div class="pname" style="color:var(--text-faint)">Free</div></td>';
+  for(let i=0;i<7;i++){
+    const d=addDays(start,i);
+    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    const free=freeCountOn(availMap,key,ulist);
+    const best=free===ulist.length&&free>0;
+    counts+=`<td style="text-align:center;font-size:12px;font-weight:700;color:${best?'var(--free)':'var(--text-dim)'}">${free}</td>`;
+  }
+  counts+='</tr></table>';
+  document.getElementById('grid-nav').innerHTML='';
+  document.getElementById('people-grid').insertAdjacentHTML('beforeend',counts);
+}
+
+function availPrev(){
+  if(availView==='grid'){gridWeekStart=addDays(gridWeekStart,-7);}
+  else{availMonth--;if(availMonth<0){availMonth=11;availYear--;}}
+  renderAvail();
+}
+function availNext(){
+  if(availView==='grid'){gridWeekStart=addDays(gridWeekStart,7);}
+  else{availMonth++;if(availMonth>11){availMonth=0;availYear++;}}
+  renderAvail();
+}
+function availToday(){
+  gridWeekStart=getWeekStart(new Date());
+  availMonth=new Date().getMonth();availYear=new Date().getFullYear();
+  renderAvail();
+}
+
+/* ==============================================================
+   WHO'S FREE PANEL
+   ============================================================== */
+let whoDate=null;
+
+function openWhoPanel(dateKey){
+  whoDate=dateKey;
+  const d=parseDate(dateKey);
+  document.getElementById('who-title').textContent=d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  const availMap=buildAvailability();
+  const ulist=Object.values(users).sort((a,b)=>a.name.localeCompare(b.name));
+
+  const groups={free:[],part:[],busy:[],away:[]};
+  ulist.forEach(u=>{
+    const st=personState(availMap,dateKey,u.name);
+    if(st.state==='free')groups.free.push([u,st]);
+    else if(st.state==='am'||st.state==='pm')groups.part.push([u,st]);
+    else if(st.state==='away')groups.away.push([u,st]);
+    else groups.busy.push([u,st]);
+  });
+
+  let html=`<div style="display:flex;gap:8px;margin-bottom:14px">
+    <div style="flex:1;text-align:center;padding:10px;background:var(--surface-2);border-radius:var(--radius)"><div style="font-size:22px;font-weight:700;color:var(--free)">${groups.free.length}</div><div style="font-size:11px;color:var(--text-dim)">free</div></div>
+    <div style="flex:1;text-align:center;padding:10px;background:var(--surface-2);border-radius:var(--radius)"><div style="font-size:22px;font-weight:700;color:var(--part)">${groups.part.length}</div><div style="font-size:11px;color:var(--text-dim)">part day</div></div>
+    <div style="flex:1;text-align:center;padding:10px;background:var(--surface-2);border-radius:var(--radius)"><div style="font-size:22px;font-weight:700;color:var(--busy)">${groups.busy.length+groups.away.length}</div><div style="font-size:11px;color:var(--text-dim)">not free</div></div>
+  </div>`;
+
+  const section=(label,items,color,statusFn)=>{
+    if(!items.length)return '';
+    let s=`<div class="settings-heading" style="margin-top:14px">${label}</div>`;
+    items.forEach(([u,st])=>{
+      s+=`<div class="who-row"><div class="who-dot" style="background:${u.color}"></div><div class="who-name">${esc(u.name)}${st.reason&&st.state!=='free'?`<div class="who-reason">${esc(st.reason)}</div>`:''}</div><span class="who-status" style="background:${color}22;color:${color}">${statusFn(st)}</span></div>`;
+    });
+    return s;
+  };
+
+  html+=section('Free',groups.free,'#1D9E75',()=>'Free');
+  html+=section('Part of the day',groups.part,'#EF9F27',st=>st.state==='am'?'PM only':'AM only');
+  html+=section('Away',groups.away,'#8b6bf0',()=>'Away');
+  html+=section('Busy',groups.busy,'#E24B4A',()=>'Busy');
+
+  document.getElementById('who-body').innerHTML=html;
+  openPanel('panel-who');
+}
+
+function planFromWho(){
+  if(!whoDate)return;
+  closePanel('panel-who');
+  selDate=whoDate;
+  viewWeekStart=getWeekStart(parseDate(whoDate));
+  openNewEvent('plan',whoDate);
+}
+
+/* ==============================================================
+   AWAY BLOCKS
+   ============================================================== */
+const PART_OPTS=[['All day','all'],['Morning','am'],['Afternoon','pm']];
+
+function openAwayPanel(){
+  resetAwayForm();
+  renderAwayList();
+  openPanel('panel-away');
+}
+
+function resetAwayForm(){
+  document.getElementById('aw-id').value='';
+  document.getElementById('aw-reason').value='';
+  document.getElementById('aw-date').value=todayStr();
+  document.getElementById('aw-enddate').value='';
+  document.getElementById('aw-err').textContent='';
+  document.getElementById('aw-cancel-btn').classList.add('hidden');
+  document.getElementById('aw-multi-btn').classList.remove('on');
+  document.getElementById('aw-end-wrap').classList.add('hidden');
+  renderAwayDateChips();renderAwayEndChips();
+  renderPartPills('all');renderAwayRepeatPills('none');
+  updateAwayHint();
+}
+
+function renderPartPills(cur){
+  const c=document.getElementById('aw-part-pills');c.innerHTML='';
+  PART_OPTS.forEach(([label,val])=>{
+    const b=document.createElement('button');
+    b.className='part-pill'+(cur===val?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{c.querySelectorAll('.part-pill').forEach(x=>x.classList.remove('active'));b.classList.add('active');c.dataset.selected=val;buzz(5);};
+    c.appendChild(b);
+  });
+  c.dataset.selected=cur;
+}
+
+function renderAwayRepeatPills(cur){
+  const c=document.getElementById('aw-repeat-pills');c.innerHTML='';
+  REPEAT_OPTS.forEach(([label,val])=>{
+    const b=document.createElement('button');
+    b.className='repeat-pill'+((cur||'none')===val?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{c.querySelectorAll('.repeat-pill').forEach(x=>x.classList.remove('active'));b.classList.add('active');c.dataset.selected=val;buzz(5);updateAwayHint();};
+    c.appendChild(b);
+  });
+  c.dataset.selected=cur||'none';
+}
+
+function renderAwayDateChips(){
+  const c=document.getElementById('aw-date-chips');c.innerHTML='';
+  const now=new Date();
+  const cur=document.getElementById('aw-date').value;
+  const opts=[['Today',0],['Tomorrow',1]];
+  [5,6,0].forEach(dow=>{let diff=dow-now.getDay();if(diff<=0)diff+=7;opts.push([WDAYS[(dow+6)%7],diff]);});
+  opts.forEach(([label,off])=>{
+    const d=addDays(now,off);
+    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    const b=document.createElement('button');
+    b.className='date-chip'+(key===cur?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{document.getElementById('aw-date').value=key;c.querySelectorAll('.date-chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');buzz(5);renderAwayEndChips();updateAwayHint();};
+    c.appendChild(b);
   });
 }
-function availPrev(){availMonth--;if(availMonth<0){availMonth=11;availYear--;}renderAvail();}
-function availNext(){availMonth++;if(availMonth>11){availMonth=0;availYear++;}renderAvail();}
-function availToday(){availMonth=new Date().getMonth();availYear=new Date().getFullYear();renderAvail();}
+
+function renderAwayEndChips(){
+  const c=document.getElementById('aw-end-chips');if(!c)return;
+  c.innerHTML='';
+  const start=document.getElementById('aw-date').value;
+  if(!start)return;
+  const cur=document.getElementById('aw-enddate').value;
+  const base=parseDate(start);
+  [[1,'2 days'],[2,'3 days'],[4,'5 days'],[6,'1 week'],[13,'2 weeks']].forEach(([off,label])=>{
+    const d=addDays(base,off);
+    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    const b=document.createElement('button');
+    b.className='date-chip'+(key===cur?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{document.getElementById('aw-enddate').value=key;c.querySelectorAll('.date-chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');buzz(5);updateAwayHint();};
+    c.appendChild(b);
+  });
+}
+
+function toggleAwayMulti(){
+  const btn=document.getElementById('aw-multi-btn');
+  const wrap=document.getElementById('aw-end-wrap');
+  const on=btn.classList.toggle('on');
+  wrap.classList.toggle('hidden',!on);
+  buzz(5);
+  if(on&&!document.getElementById('aw-enddate').value){
+    const s=document.getElementById('aw-date').value;
+    if(s){const d=addDays(parseDate(s),1);document.getElementById('aw-enddate').value=dk(d.getFullYear(),d.getMonth(),d.getDate());}
+    renderAwayEndChips();
+  }
+  updateAwayHint();
+}
+
+function awayLabel(a){
+  const s=parseDate(a.date);
+  let txt=s.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+  if(a.endDate&&a.endDate>a.date){
+    const e=parseDate(a.endDate);
+    txt+=' → '+e.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+  }
+  return txt;
+}
+
+function updateAwayHint(){
+  const h=document.getElementById('aw-hint');if(!h)return;
+  const start=document.getElementById('aw-date').value;
+  if(!start){h.textContent='';return;}
+  const multi=document.getElementById('aw-multi-btn').classList.contains('on');
+  const end=multi?document.getElementById('aw-enddate').value:'';
+  const part=document.getElementById('aw-part-pills').dataset.selected||'all';
+  const rep=document.getElementById('aw-repeat-pills').dataset.selected||'none';
+  let txt='';
+  if(end&&end>start){
+    const days=Math.round((parseDate(end)-parseDate(start))/86400000)+1;
+    txt=days+' days';
+  } else {
+    txt='1 day';
+  }
+  if(part!=='all')txt+=' · '+(part==='am'?'mornings only':'afternoons only');
+  if(rep!=='none')txt+=' · repeats '+rep;
+  h.textContent=txt;
+}
+
+async function saveAway(){
+  const id=document.getElementById('aw-id').value;
+  const date=document.getElementById('aw-date').value;
+  const err=document.getElementById('aw-err');
+  err.textContent='';
+  if(!date){err.textContent='Pick a date';return;}
+
+  const multi=document.getElementById('aw-multi-btn').classList.contains('on');
+  let endDate=multi?document.getElementById('aw-enddate').value:'';
+  if(endDate&&endDate<date){err.textContent='End date is before the start';return;}
+  if(endDate===date)endDate='';
+
+  const data={
+    person:me.name,
+    date,endDate,
+    part:document.getElementById('aw-part-pills').dataset.selected||'all',
+    repeat:document.getElementById('aw-repeat-pills').dataset.selected||'none',
+    reason:document.getElementById('aw-reason').value.trim(),
+    updated:Date.now()
+  };
+
+  if(id){
+    await db.ref('away/'+id).update(data);
+    toast('Updated');
+  } else {
+    data.created=Date.now();
+    await db.ref('away').push().set(data);
+    toast('Marked away');
+  }
+  buzz();
+  resetAwayForm();
+}
+
+function editAway(id){
+  const a=away[id];if(!a)return;
+  document.getElementById('aw-id').value=id;
+  document.getElementById('aw-reason').value=a.reason||'';
+  document.getElementById('aw-date').value=a.date;
+  document.getElementById('aw-enddate').value=a.endDate||'';
+  document.getElementById('aw-cancel-btn').classList.remove('hidden');
+  const multi=!!(a.endDate&&a.endDate>a.date);
+  document.getElementById('aw-multi-btn').classList.toggle('on',multi);
+  document.getElementById('aw-end-wrap').classList.toggle('hidden',!multi);
+  renderAwayDateChips();renderAwayEndChips();
+  renderPartPills(a.part||'all');renderAwayRepeatPills(a.repeat||'none');
+  updateAwayHint();
+  document.getElementById('panel-away').querySelector('.panel-scroll').scrollTop=0;
+}
+
+async function deleteAway(id){
+  const ok=await appConfirm('Remove this away block?',{okText:'Remove',danger:true});
+  if(!ok)return;
+  await db.ref('away/'+id).remove();
+  toast('Removed');
+  if(document.getElementById('aw-id').value===id)resetAwayForm();
+}
+
+function renderAwayList(){
+  const c=document.getElementById('away-list');
+  const mine=Object.values(away).filter(a=>a.person===me.name).sort((a,b)=>a.date>b.date?1:-1);
+  if(!mine.length){c.innerHTML='<div class="day-empty" style="padding:20px">Nothing set</div>';return;}
+  c.innerHTML='';
+  mine.forEach(a=>{
+    const row=document.createElement('div');row.className='away-item';
+    const bits=[];
+    if(a.part&&a.part!=='all')bits.push(a.part==='am'?'Morning':'Afternoon');
+    if(a.repeat&&a.repeat!=='none')bits.push('🔁 '+a.repeat);
+    if(a.reason)bits.push(esc(a.reason));
+    row.innerHTML=`<div class="away-item-info"><div class="away-item-when">${awayLabel(a)}</div><div class="away-item-detail">${bits.join(' · ')||'All day'}</div></div><button class="btn btn-sm btn-secondary" onclick="editAway('${a.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteAway('${a.id}')">✕</button>`;
+    c.appendChild(row);
+  });
+}
 
 /* ==============================================================
    PLANS
@@ -2308,12 +2862,42 @@ function renderWheelSection(){
   } else {
     html+='<div class="wheel-presets">';
     wl.forEach(w=>{
-      const items=w.items?Object.values(w.items):[];
-      html+=`<div class="wheel-preset" onclick="openWheel('${w.id}')"><div><div class="wheel-preset-name">${esc(w.name)}</div><div class="wheel-preset-meta">${items.length} items · by ${esc(w.creator)}</div></div><span style="font-size:20px">🎡</span></div>`;
+      const items=w.items?Object.values(w.items).filter(i=>i&&i.trim()):[];
+      html+=`<div class="wheel-preset"><div onclick="openWheel('${w.id}')" style="flex:1;min-width:0;cursor:pointer"><div class="wheel-preset-name">${esc(w.name)}</div><div class="wheel-preset-meta">${items.length} items · by ${esc(w.creator)}</div></div><div style="display:flex;gap:4px;align-items:center"><button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();renameWheel('${w.id}')">Rename</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteWheel('${w.id}')">✕</button></div></div>`;
     });
     html+='</div>';
   }
   c.innerHTML=html;
+}
+
+async function renameWheel(id){
+  const w=wheels[id];if(!w)return;
+  const name=await appPrompt('Rename wheel:',w.name);
+  if(!name||!name.trim())return;
+  await db.ref('wheels/'+id+'/name').set(name.trim());
+  if(currentWheelId===id)document.getElementById('wheel-panel-title').textContent=name.trim();
+  toast('Renamed');buzz();
+}
+
+async function deleteWheel(id){
+  const w=wheels[id];if(!w)return;
+  const ok=await appConfirm('Delete "'+w.name+'"?',{okText:'Delete',danger:true});
+  if(!ok)return;
+  // Detach from any events using it
+  Object.values(events).forEach(ev=>{
+    if(ev.wheelId===id){
+      db.ref('events/'+ev.id+'/wheelId').remove();
+      db.ref('events/'+ev.id+'/wheelResult').remove();
+    }
+  });
+  await db.ref('wheels/'+id).remove();
+  if(currentWheelId===id){currentWheelId=null;closePanel('panel-wheel');}
+  toast('Deleted');
+}
+
+async function renameCurrentWheel(){
+  if(!currentWheelId){toast('Save the wheel first');return;}
+  renameWheel(currentWheelId);
 }
 
 function openNewWheel(){
@@ -3264,8 +3848,10 @@ function initSwipeNav(){
   if(dayEvents)attachHorizontalSwipe(dayEvents,weekNext,weekPrev);
   const monthGrid=document.getElementById('month-grid');
   if(monthGrid)attachHorizontalSwipe(monthGrid,monthNext,monthPrev);
-  const availGrid=document.getElementById('avail-grid');
-  if(availGrid)attachHorizontalSwipe(availGrid,availNext,availPrev);
+  const heatGrid=document.getElementById('heat-grid');
+  if(heatGrid)attachHorizontalSwipe(heatGrid,availNext,availPrev);
+  const peopleGrid=document.getElementById('avail-gridview');
+  if(peopleGrid)attachHorizontalSwipe(peopleGrid,availNext,availPrev);
 }
 
 /* ==============================================================
