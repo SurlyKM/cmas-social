@@ -409,6 +409,13 @@ input,select,textarea,button{font-family:var(--font)}
 .toast{position:fixed;bottom:calc(80px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface-3);color:var(--text);padding:11px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* Profile */
+.header-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;color:#fff;font:700 12px var(--font);display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;padding:0}
+.header-avatar:active{transform:scale(.93)}
+.profile-preview{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px}
+.profile-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;flex-shrink:0}
+.profile-avatar-lg{width:76px;height:76px;font-size:30px}
+
 /* Multi-day */
 .multiday-row{margin-top:10px}
 .multiday-toggle{display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-dim);font:600 13px var(--font);cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
@@ -524,6 +531,7 @@ input,select,textarea,button{font-family:var(--font)}
         <button class="view-toggle-btn" data-view="month" onclick="setCalView('month')">Month</button>
       </div>
       <button class="btn-icon" onclick="openSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="header-avatar" id="header-avatar" onclick="openProfile()" title="Edit profile"></button>
     </div>
   </header>
 
@@ -860,6 +868,37 @@ input,select,textarea,button{font-family:var(--font)}
 </div>
 
 <!-- ============================================================
+     PANEL: Edit Profile
+     ============================================================ -->
+<div id="panel-profile" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-profile')"></div>
+  <div class="panel-body">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title">Edit Profile</div>
+      <button class="btn-icon" onclick="closePanel('panel-profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="panel-scroll">
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <div class="profile-avatar profile-avatar-lg" id="pf-avatar"></div>
+      </div>
+      <div class="field">
+        <label>Display Name</label>
+        <input id="pf-name" maxlength="20" autocomplete="off" oninput="updateProfilePreview()">
+        <div style="font-size:12px;color:var(--text-faint);margin-top:4px">Changing your name updates it everywhere: your events, RSVPs, poll votes, chat messages and groups.</div>
+      </div>
+      <div class="field">
+        <label>Colour</label>
+        <div class="color-grid" id="pf-colors"></div>
+      </div>
+      <div id="pf-err" class="gate-err"></div>
+      <div id="pf-progress" style="font-size:13px;color:var(--accent);min-height:18px;text-align:center;margin-bottom:6px"></div>
+      <button class="btn btn-primary btn-full" id="pf-save-btn" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      PANEL: Settings
      ============================================================ -->
 <div id="panel-settings" class="panel">
@@ -872,6 +911,24 @@ input,select,textarea,button{font-family:var(--font)}
     </div>
     <div class="panel-scroll">
       <div class="settings-section">
+        <div class="settings-heading">Your Account</div>
+        <div class="profile-preview">
+          <div class="profile-avatar" id="s-avatar"></div>
+          <div style="flex:1;min-width:0">
+            <div id="s-name" style="font-weight:700;font-size:16px"></div>
+            <div id="s-role" style="font-size:12px;color:var(--text-faint)"></div>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="openProfile()">Edit</button>
+        </div>
+        <div class="settings-row"><span>Access code</span><span id="s-code" style="font-family:monospace;letter-spacing:.04em"></span></div>
+        <div class="settings-row"><span>Recovery code</span><button class="btn btn-sm btn-secondary" onclick="resetOwnCode()">Reset my code</button></div>
+        <div class="settings-row" style="border-bottom:none"><span>Session</span><button class="btn btn-sm btn-danger" onclick="signOut()">Sign out</button></div>
+      </div>
+      <div class="settings-section" id="s-members-section">
+        <div class="settings-heading">Members <span id="s-member-count" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+        <div id="s-members-list"></div>
+      </div>
+      <div class="settings-section">
         <div class="settings-heading">Appearance</div>
         <div class="settings-row"><span>Dark mode</span><button id="theme-toggle" class="toggle on" onclick="toggleTheme()"></button></div>
       </div>
@@ -880,17 +937,7 @@ input,select,textarea,button{font-family:var(--font)}
         <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Events marked "Close Friends" are only visible to people on this list.</p>
         <div id="cf-list" class="check-list"></div>
       </div>
-      <div class="settings-section">
-        <div class="settings-heading">Your Account</div>
-        <div class="settings-row"><span>Name</span><span id="s-name" style="font-weight:600"></span></div>
-        <div class="settings-row"><span>Colour</span><div id="s-color" style="width:22px;height:22px;border-radius:50%"></div></div>
-        <div class="settings-row"><span>Access code</span><span id="s-code" style="font-family:monospace;letter-spacing:.04em"></span></div>
-        <div class="settings-row"><span>Recovery code</span><button class="btn btn-sm btn-secondary" onclick="resetOwnCode()">Reset my code</button></div>
-      </div>
-      <div class="settings-section" id="s-members-section">
-        <div class="settings-heading">Members <span id="s-member-count" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
-        <div id="s-members-list"></div>
-      </div>
+    
     </div>
   </div>
 </div>
@@ -1381,14 +1428,18 @@ async function submitFirst() {
 function startApp() {
   showScreen('app');
   document.getElementById('s-name').textContent = me.name;
-  document.getElementById('s-color').style.background = me.color;
   document.getElementById('s-code').textContent = appCfg.accessCode;
 
   const t = localStorage.getItem('cmas-theme');
   if(t==='light'){document.documentElement.setAttribute('data-theme','light');document.getElementById('theme-toggle').classList.remove('on');}
   else if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}
 
-  db.ref('users').on('value',s=>{users={};s.forEach(c=>{users[c.val().name]=c.val();});renderAll();});
+  db.ref('users').on('value',s=>{
+    users={};s.forEach(c=>{users[c.val().name]=c.val();});
+    // Keep our own record in sync (e.g. admin promoted us)
+    if(me&&users[me.name])me={...me,...users[me.name]};
+    renderAll();
+  });
   db.ref('events').on('value',s=>{events={};s.forEach(c=>{events[c.key]={id:c.key,...c.val()};});renderAll();if(detailId&&events[detailId])renderDetail(detailId);});
   db.ref('groups').on('value',s=>{allG={};s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];allG[c.key]={id:c.key,...v};});groups=allG;renderGroups();renderGroupOpts();});
   db.ref('polls').on('value',s=>{polls={};s.forEach(c=>{polls[c.key]={id:c.key,...c.val()};});renderPolls();if(activePollId&&polls[activePollId])renderPollDetail(activePollId);});
@@ -1398,7 +1449,14 @@ function startApp() {
   renderAll();
 }
 
-function renderAll(){ renderWeek(); renderMonth(); renderAvail(); renderPlans(); }
+function renderHeaderAvatar(){
+  const av=document.getElementById('header-avatar');
+  if(!av||!me)return;
+  av.style.background=me.color;
+  av.textContent=initials(me.name);
+}
+
+function renderAll(){ renderHeaderAvatar(); renderWeek(); renderMonth(); renderAvail(); renderPlans(); }
 
 /* ==============================================================
    PRESENCE
@@ -2665,9 +2723,227 @@ function attachSwipe(el,eventId){
 }
 
 /* ==============================================================
+   PROFILE EDITING
+   ============================================================== */
+let pfColor=null;
+
+function initials(name){
+  const parts=name.trim().split(/\s+/);
+  if(parts.length>1)return (parts[0][0]+parts[1][0]).toUpperCase();
+  return name.trim().slice(0,2).toUpperCase();
+}
+
+function openProfile(){
+  pfColor=me.color;
+  document.getElementById('pf-name').value=me.name;
+  document.getElementById('pf-err').textContent='';
+  document.getElementById('pf-progress').textContent='';
+  document.getElementById('pf-save-btn').disabled=false;
+  document.getElementById('pf-save-btn').textContent='Save Changes';
+  renderProfileColors();
+  updateProfilePreview();
+  openPanel('panel-profile');
+}
+
+function renderProfileColors(){
+  const g=document.getElementById('pf-colors');g.innerHTML='';
+  // Which colours are already taken by other people
+  const taken=Object.values(users).filter(u=>u.name!==me.name).map(u=>u.color);
+  COLORS.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='color-swatch'+(c===pfColor?' selected':'');
+    d.style.background=c;
+    if(taken.includes(c)){
+      d.style.opacity='.32';
+      d.title='Used by someone else';
+    }
+    d.onclick=()=>{
+      pfColor=c;buzz(5);
+      g.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
+      d.classList.add('selected');
+      updateProfilePreview();
+    };
+    g.appendChild(d);
+  });
+}
+
+function updateProfilePreview(){
+  const name=document.getElementById('pf-name').value.trim()||me.name;
+  const av=document.getElementById('pf-avatar');
+  av.style.background=pfColor;
+  av.textContent=initials(name);
+}
+
+async function saveProfile(){
+  const newName=document.getElementById('pf-name').value.trim();
+  const newColor=pfColor;
+  const err=document.getElementById('pf-err');
+  const prog=document.getElementById('pf-progress');
+  const btn=document.getElementById('pf-save-btn');
+  err.textContent='';
+
+  if(!newName){err.textContent='Enter a name';return;}
+  if(newName.length>20){err.textContent='Name too long (20 max)';return;}
+
+  const nameChanged=newName!==me.name;
+  const colorChanged=newColor!==me.color;
+  if(!nameChanged&&!colorChanged){closePanel('panel-profile');return;}
+
+  // Colour only: simple update
+  if(!nameChanged){
+    await db.ref('users/'+encKey(me.name)+'/color').set(newColor);
+    me.color=newColor;
+    buzz();toast('Colour updated');
+    closePanel('panel-profile');
+    return;
+  }
+
+  // Name change: check availability
+  const existing=await db.ref('users/'+encKey(newName)).once('value');
+  if(existing.exists()){err.textContent='That name is already taken';return;}
+
+  const confirmMsg='Change your name from "'+me.name+'" to "'+newName+'"? This updates it across all your events, votes and messages.';
+  const ok=await appConfirm(confirmMsg,{okText:'Change name'});
+  if(!ok)return;
+
+  btn.disabled=true;btn.textContent='Migrating...';
+  const oldName=me.name;
+
+  try{
+    // 1. Create the new user record
+    prog.textContent='Creating account...';
+    const newUser={...me,name:newName,color:newColor};
+    await db.ref('users/'+encKey(newName)).set(newUser);
+
+    // 2. Events: creator + rsvps keys
+    prog.textContent='Updating events...';
+    const evSnap=await db.ref('events').once('value');
+    const evUpdates={};
+    evSnap.forEach(c=>{
+      const ev=c.val();
+      if(ev.creator===oldName)evUpdates['events/'+c.key+'/creator']=newName;
+      if(ev.rsvps&&ev.rsvps[oldName]!==undefined){
+        evUpdates['events/'+c.key+'/rsvps/'+newName]=ev.rsvps[oldName];
+        evUpdates['events/'+c.key+'/rsvps/'+oldName]=null;
+      }
+    });
+    if(Object.keys(evUpdates).length)await db.ref().update(evUpdates);
+
+    // 3. Groups: member lists
+    prog.textContent='Updating groups...';
+    const grpSnap=await db.ref('groups').once('value');
+    const grpUpdates={};
+    grpSnap.forEach(c=>{
+      const g=c.val();
+      if(!g.members)return;
+      const mem=Object.values(g.members);
+      if(mem.includes(oldName)){
+        const newMem={};
+        mem.forEach((m,i)=>{newMem[i]=(m===oldName?newName:m);});
+        grpUpdates['groups/'+c.key+'/members']=newMem;
+      }
+    });
+    if(Object.keys(grpUpdates).length)await db.ref().update(grpUpdates);
+
+    // 4. Other users' close friends lists
+    prog.textContent='Updating friend lists...';
+    const usrSnap=await db.ref('users').once('value');
+    const usrUpdates={};
+    usrSnap.forEach(c=>{
+      const u=c.val();
+      if(u.name===oldName)return;
+      if(!u.closeFriends)return;
+      const cf=Object.values(u.closeFriends);
+      if(cf.includes(oldName)){
+        const newCf={};
+        cf.forEach((n,i)=>{newCf[i]=(n===oldName?newName:n);});
+        usrUpdates['users/'+encKey(u.name)+'/closeFriends']=newCf;
+      }
+    });
+    if(Object.keys(usrUpdates).length)await db.ref().update(usrUpdates);
+
+    // 5. Polls: creator + vote keys
+    prog.textContent='Updating polls...';
+    const pollSnap=await db.ref('polls').once('value');
+    const pollUpdates={};
+    pollSnap.forEach(c=>{
+      const p=c.val();
+      if(p.creator===oldName)pollUpdates['polls/'+c.key+'/creator']=newName;
+      if(p.votes&&p.votes[oldName]!==undefined){
+        pollUpdates['polls/'+c.key+'/votes/'+newName]=p.votes[oldName];
+        pollUpdates['polls/'+c.key+'/votes/'+oldName]=null;
+      }
+    });
+    if(Object.keys(pollUpdates).length)await db.ref().update(pollUpdates);
+
+    // 6. Wheels: creator
+    const whSnap=await db.ref('wheels').once('value');
+    const whUpdates={};
+    whSnap.forEach(c=>{ if(c.val().creator===oldName)whUpdates['wheels/'+c.key+'/creator']=newName; });
+    if(Object.keys(whUpdates).length)await db.ref().update(whUpdates);
+
+    // 7. Chat message authors
+    prog.textContent='Updating messages...';
+    const chatSnap=await db.ref('chat').once('value');
+    const chatUpdates={};
+    chatSnap.forEach(evNode=>{
+      const msgs=evNode.val().messages;
+      if(!msgs)return;
+      Object.entries(msgs).forEach(([mk,m])=>{
+        if(m.author===oldName)chatUpdates['chat/'+evNode.key+'/messages/'+mk+'/author']=newName;
+      });
+    });
+    if(Object.keys(chatUpdates).length)await db.ref().update(chatUpdates);
+
+    // 8. Presence
+    const presSnap=await db.ref('presence').once('value');
+    const presUpdates={};
+    presSnap.forEach(c=>{ if(c.val().name===oldName)presUpdates['presence/'+c.key+'/name']=newName; });
+    if(Object.keys(presUpdates).length)await db.ref().update(presUpdates);
+
+    // 9. Remove the old user record last, once everything else points at the new name
+    prog.textContent='Finishing up...';
+    await db.ref('users/'+encKey(oldName)).remove();
+
+    // 10. Update local state
+    me=newUser;
+    localStorage.setItem('cmas-user',JSON.stringify({name:newName}));
+    sessionId=Math.random().toString(36).slice(2)+Date.now().toString(36);
+
+    prog.textContent='';
+    buzz(30);
+    toast('Now known as '+newName);
+    closePanel('panel-profile');
+    renderAll();renderMembers();
+  } catch(e){
+    err.textContent='Something went wrong: '+e.message;
+    prog.textContent='';
+  } finally {
+    btn.disabled=false;btn.textContent='Save Changes';
+  }
+}
+
+async function signOut(){
+  const ok=await appConfirm('Sign out on this device? You\'ll need your recovery code to get back in.',{okText:'Sign out',danger:true});
+  if(!ok)return;
+  try{await db.ref('presence/'+sessionId).remove();}catch(e){}
+  localStorage.removeItem('cmas-user');
+  location.reload();
+}
+
+/* ==============================================================
    SETTINGS
    ============================================================== */
-function openSettings(){openPanel('panel-settings');renderCF();renderMembers();}
+function openSettings(){openPanel('panel-settings');renderProfileCard();renderCF();renderMembers();}
+
+function renderProfileCard(){
+  const av=document.getElementById('s-avatar');
+  av.style.background=me.color;
+  av.textContent=initials(me.name);
+  document.getElementById('s-name').textContent=me.name;
+  document.getElementById('s-role').textContent=isAdmin()?'Admin':'Member';
+  document.getElementById('s-code').textContent=appCfg.accessCode;
+}
 
 function isAdmin(){ return me && me.admin === true; }
 
@@ -2716,7 +2992,7 @@ function renderMembers(){
     if(isAdmin()&&!isSelf&&!u.admin){
       actions+=`<button class="btn btn-sm btn-secondary" onclick="adminPromote('${esc(u.name)}')" title="Make admin" style="padding:5px 8px">👑</button>`;
     }
-    card.innerHTML=`<div class="user-card-dot" style="background:${u.color}"></div><div class="user-card-info"><div class="user-card-name">${esc(u.name)} ${adminBadge}</div><div class="user-card-meta">Joined ${joined}</div></div><div class="user-card-actions">${actions}</div>`;
+    card.innerHTML=`<div class="profile-avatar" style="background:${u.color};width:34px;height:34px;font-size:13px">${initials(u.name)}</div><div class="user-card-info"><div class="user-card-name">${esc(u.name)} ${adminBadge}</div><div class="user-card-meta">Joined ${joined}</div></div><div class="user-card-actions">${actions}</div>`;
     list.appendChild(card);
   });
 }
