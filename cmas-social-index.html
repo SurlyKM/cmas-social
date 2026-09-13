@@ -286,6 +286,16 @@ input,select,textarea,button{font-family:var(--font)}
 /* ============================================================
    LOADING & UTILITY
    ============================================================ */
+/* User management */
+.user-card{display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px}
+.user-card-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.user-card-info{flex:1;min-width:0}
+.user-card-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.user-card-meta{font-size:11px;color:var(--text-faint);margin-top:1px}
+.user-card-actions{display:flex;gap:4px;flex-shrink:0}
+.admin-badge{font-size:9px;padding:1px 6px;border-radius:6px;background:var(--primary-dim);color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.user-card-actions .btn-sm{padding:5px 10px;font-size:11px}
+
 .loading{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:14px;padding:24px;text-align:center}
 .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin-right:10px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -586,11 +596,38 @@ input,select,textarea,button{font-family:var(--font)}
         <div class="settings-row"><span>Name</span><span id="s-name" style="font-weight:600"></span></div>
         <div class="settings-row"><span>Colour</span><div id="s-color" style="width:22px;height:22px;border-radius:50%"></div></div>
         <div class="settings-row"><span>Access code</span><span id="s-code" style="font-family:monospace;letter-spacing:.04em"></span></div>
+        <div class="settings-row"><span>Recovery code</span><button class="btn btn-sm btn-secondary" onclick="resetOwnCode()">Reset my code</button></div>
+      </div>
+      <div class="settings-section" id="s-members-section">
+        <div class="settings-heading">Members <span id="s-member-count" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+        <div id="s-members-list"></div>
       </div>
     </div>
   </div>
 </div>
 
+
+<!-- ============================================================
+     PANEL: Recovery Code Display (after reset)
+     ============================================================ -->
+<div id="panel-newcode" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-newcode')"></div>
+  <div class="panel-body">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title">New Recovery Code</div>
+      <button class="btn-icon" onclick="closePanel('panel-newcode')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="panel-scroll" style="text-align:center">
+      <p id="newcode-for" style="font-size:14px;color:var(--text-dim);margin-bottom:12px"></p>
+      <div class="recovery-box">
+        <div class="recovery-code" id="newcode-display"></div>
+        <div class="recovery-hint">Save this now. It won't be shown again.</div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="closePanel('panel-newcode')" style="margin-top:12px">Done</button>
+    </div>
+  </div>
+</div>
 
 <!-- ============================================================
      JAVASCRIPT
@@ -793,7 +830,7 @@ async function submitFirst() {
 
   const recoveryCode = generateCode();
   const hash = await sha256(recoveryCode);
-  const user = { name, color:selColor, closeFriends:{}, codeHash:hash, created:Date.now() };
+  const user = { name, color:selColor, closeFriends:{}, codeHash:hash, admin:true, created:Date.now() };
   await db.ref('users/'+encKey(name)).set(user);
   me = user;
   localStorage.setItem('cmas-user', JSON.stringify({name}));
@@ -1237,7 +1274,9 @@ async function sendChat(){
 /* ==============================================================
    SETTINGS
    ============================================================== */
-function openSettings(){openPanel('panel-settings');renderCF();}
+function openSettings(){openPanel('panel-settings');renderCF();renderMembers();}
+
+function isAdmin(){ return me && me.admin === true; }
 
 function renderCF(){
   const c=document.getElementById('cf-list');c.innerHTML='';
@@ -1261,6 +1300,83 @@ function toggleTheme(){
   const btn=document.getElementById('theme-toggle');
   if(btn.classList.contains('on')){document.documentElement.setAttribute('data-theme','light');btn.classList.remove('on');localStorage.setItem('cmas-theme','light');}
   else{document.documentElement.setAttribute('data-theme','dark');btn.classList.add('on');localStorage.setItem('cmas-theme','dark');}
+}
+
+/* ==============================================================
+   MEMBER MANAGEMENT
+   ============================================================== */
+function renderMembers(){
+  const list=document.getElementById('s-members-list');
+  const ulist=Object.values(users).sort((a,b)=>a.created-b.created);
+  document.getElementById('s-member-count').textContent='('+ulist.length+')';
+  list.innerHTML='';
+  ulist.forEach(u=>{
+    const card=document.createElement('div');card.className='user-card';
+    const joined=new Date(u.created).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+    const isSelf=u.name===me.name;
+    const adminBadge=u.admin?'<span class="admin-badge">Admin</span>':'';
+    let actions='';
+    if(isAdmin()&&!isSelf){
+      actions+=`<button class="btn btn-sm btn-secondary" onclick="adminResetCode('${esc(u.name)}')">Reset code</button>`;
+      actions+=`<button class="btn btn-sm btn-danger" onclick="adminRemoveUser('${esc(u.name)}')">Remove</button>`;
+    }
+    if(isAdmin()&&!isSelf&&!u.admin){
+      actions+=`<button class="btn btn-sm btn-secondary" onclick="adminPromote('${esc(u.name)}')" title="Make admin" style="padding:5px 8px">👑</button>`;
+    }
+    card.innerHTML=`<div class="user-card-dot" style="background:${u.color}"></div><div class="user-card-info"><div class="user-card-name">${esc(u.name)} ${adminBadge}</div><div class="user-card-meta">Joined ${joined}</div></div><div class="user-card-actions">${actions}</div>`;
+    list.appendChild(card);
+  });
+}
+
+async function resetOwnCode(){
+  if(!confirm('Generate a new recovery code? Your old code will stop working.'))return;
+  const code=generateCode();
+  const hash=await sha256(code);
+  await db.ref('users/'+encKey(me.name)+'/codeHash').set(hash);
+  me.codeHash=hash;
+  document.getElementById('newcode-for').textContent='Your new recovery code:';
+  document.getElementById('newcode-display').textContent=code;
+  openPanel('panel-newcode');
+}
+
+async function adminResetCode(name){
+  if(!isAdmin())return;
+  if(!confirm('Reset recovery code for '+name+'? Their old code will stop working.'))return;
+  const code=generateCode();
+  const hash=await sha256(code);
+  await db.ref('users/'+encKey(name)+'/codeHash').set(hash);
+  document.getElementById('newcode-for').textContent='New code for '+name+':';
+  document.getElementById('newcode-display').textContent=code;
+  openPanel('panel-newcode');
+}
+
+async function adminRemoveUser(name){
+  if(!isAdmin())return;
+  if(!confirm('Remove '+name+'? This deletes their account and all their events.'))return;
+  // Remove user
+  await db.ref('users/'+encKey(name)).remove();
+  // Remove their events
+  Object.values(events).forEach(ev=>{
+    if(ev.creator===name)db.ref('events/'+ev.id).remove();
+  });
+  // Remove from groups
+  Object.values(groups).forEach(g=>{
+    const newMembers={};let idx=0;
+    g.members.forEach(m=>{if(m!==name){newMembers[idx]=m;idx++;}});
+    db.ref('groups/'+g.id+'/members').set(newMembers);
+  });
+  // Remove their presence
+  db.ref('presence').once('value').then(s=>{
+    s.forEach(c=>{if(c.val().name===name)db.ref('presence/'+c.key).remove();});
+  });
+  renderMembers();
+}
+
+async function adminPromote(name){
+  if(!isAdmin())return;
+  if(!confirm('Make '+name+' an admin? This gives them full user management access.'))return;
+  await db.ref('users/'+encKey(name)+'/admin').set(true);
+  renderMembers();
 }
 
 /* ==============================================================
