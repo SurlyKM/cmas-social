@@ -343,6 +343,72 @@ input,select,textarea,button{font-family:var(--font)}
 .wheel-preset-name{font-size:14px;font-weight:600}
 .wheel-preset-meta{font-size:12px;color:var(--text-dim)}
 
+/* Quick add bar */
+.quick-add{padding:8px 12px}
+.quick-add-input{width:100%;padding:13px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:15px;outline:none;transition:border-color .15s}
+.quick-add-input:focus{border-color:var(--primary)}
+.quick-add-input::placeholder{color:var(--text-faint)}
+.quick-parse{font-size:12px;color:var(--accent);padding:6px 4px 0;min-height:20px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.quick-parse-chip{background:var(--accent-dim);color:var(--accent);padding:2px 8px;border-radius:8px;font-weight:600}
+.quick-actions{display:flex;gap:6px;margin-top:8px}
+
+/* Date chips */
+.date-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch}
+.date-chip{padding:8px 14px;border:1px solid var(--border);border-radius:20px;background:var(--surface-2);color:var(--text-dim);font:600 13px var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.date-chip.active{background:var(--primary);border-color:var(--primary);color:#fff}
+
+/* Time chips */
+.time-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch}
+.time-chip{padding:7px 12px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2);color:var(--text-dim);font:600 12px var(--font);cursor:pointer;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.time-chip.active{background:var(--primary);border-color:var(--primary);color:#fff}
+
+/* Collapsible options */
+.collapse-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 0;background:none;border:none;border-top:1px solid var(--border);color:var(--text-dim);font:600 13px var(--font);cursor:pointer;margin-top:8px}
+.collapse-toggle svg{width:16px;height:16px;transition:transform .2s}
+.collapse-toggle.open svg{transform:rotate(180deg)}
+.collapse-body{display:none}
+.collapse-body.open{display:block}
+
+/* Up next */
+.upnext{padding:8px 12px 0}
+.upnext-head{font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;padding:0 2px}
+.upnext-card{display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:5px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.upnext-card:active{background:var(--surface-2)}
+.upnext-when{font-size:11px;font-weight:700;color:var(--primary);min-width:52px;flex-shrink:0}
+.upnext-title{font-size:14px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upnext-time{font-size:12px;color:var(--text-dim);flex-shrink:0}
+
+/* Swipe to delete */
+.ev-swipe{position:relative;overflow:hidden;border-radius:var(--radius);margin-bottom:6px}
+.ev-swipe-bg{position:absolute;inset:0;background:var(--danger);display:flex;align-items:center;justify-content:flex-end;padding-right:20px;color:#fff;font-weight:700;font-size:14px}
+.ev-swipe-fg{position:relative;transition:transform .2s;background:var(--surface)}
+.ev-swipe-fg.swiping{transition:none}
+
+/* Month cell with titles */
+.month-cell{min-height:62px;padding:3px 2px;border-radius:8px;cursor:pointer;transition:background .1s;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.month-cell-titles{width:100%;margin-top:1px;display:flex;flex-direction:column;gap:1px}
+.month-ev{font-size:8px;padding:1px 3px;border-radius:3px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;font-weight:600}
+.month-more{font-size:8px;color:var(--text-faint);font-weight:600}
+
+/* Emoji picker */
+.emoji-row{display:flex;gap:6px;overflow-x:auto;padding:4px 0;-webkit-overflow-scrolling:touch}
+.emoji-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);font-size:19px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.emoji-btn.active{background:var(--primary-dim);border-color:var(--primary)}
+
+/* Search */
+.search-bar{padding:8px 12px;display:none}
+.search-bar.show{display:block}
+.search-input{width:100%;padding:11px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:15px;outline:none}
+
+/* Repeat pills */
+.repeat-pills{display:flex;gap:6px;flex-wrap:wrap}
+.repeat-pill{padding:7px 13px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2);color:var(--text-dim);font:600 12px var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.repeat-pill.active{background:var(--primary);border-color:var(--primary);color:#fff}
+
+/* Toast */
+.toast{position:fixed;bottom:calc(80px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface-3);color:var(--text);padding:11px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
 /* Section tabs inside plans screen */
 .section-tabs{display:flex;gap:2px;padding:0 12px 8px;background:var(--bg)}
 .section-tab{padding:6px 14px;border:none;border-radius:8px;background:none;color:var(--text-faint);font:500 13px var(--font);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
@@ -462,13 +528,25 @@ input,select,textarea,button{font-family:var(--font)}
           <button class="btn-icon" onclick="weekPrev()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
           <div class="week-label" id="week-label"></div>
           <div class="week-nav">
+            <button class="btn-icon" onclick="toggleSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>
             <button class="btn btn-sm btn-secondary" onclick="weekToday()">Today</button>
             <button class="btn-icon" onclick="weekNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
           </div>
         </div>
-        <div class="week-strip" id="week-strip"></div>
-        <div class="day-header" id="selected-day-label"></div>
-        <div class="day-events" id="day-events"></div>
+        <div class="search-bar" id="search-bar">
+          <input class="search-input" id="search-input" placeholder="Search events..." oninput="renderSearch()">
+        </div>
+        <div id="search-results" class="hidden" style="padding:0 12px 80px"></div>
+        <div id="week-normal">
+          <div class="week-strip" id="week-strip"></div>
+          <div class="quick-add">
+            <input class="quick-add-input" id="quick-add" placeholder="Beers Friday 7pm at The Grand" oninput="onQuickAddInput()" onkeydown="if(event.key==='Enter')submitQuickAdd()">
+            <div class="quick-parse" id="quick-parse"></div>
+          </div>
+          <div id="upnext" class="upnext"></div>
+          <div class="day-header" id="selected-day-label"></div>
+          <div class="day-events" id="day-events"></div>
+        </div>
       </div>
       <!-- Month view -->
       <div id="month-view" class="hidden">
@@ -572,21 +650,48 @@ input,select,textarea,button{font-family:var(--font)}
     </div>
     <div class="panel-scroll">
       <input type="hidden" id="ev-id">
-      <div class="field"><label>Title</label><input id="ev-title" placeholder="What's happening?"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field"><label>Date</label><input id="ev-date" type="date"></div>
-        <div class="field"><label>Time</label><input id="ev-time" type="time"></div>
+      <div class="field"><label>What</label><input id="ev-title" placeholder="What's happening?" autocomplete="off"></div>
+
+      <div class="field">
+        <label>Icon</label>
+        <div class="emoji-row" id="ev-emoji-row"></div>
       </div>
-      <div class="field"><label>Location</label><input id="ev-location" placeholder="Where?"></div>
-      <div class="field"><label>Description</label><textarea id="ev-desc" rows="2" placeholder="Details..."></textarea></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field"><label>Group</label><select id="ev-group"></select></div>
-        <div class="field"><label>Privacy</label><select id="ev-privacy"><option value="everyone">Everyone</option><option value="close">Close Friends</option><option value="me">Just Me</option></select></div>
+
+      <div class="field">
+        <label>When</label>
+        <div class="date-chips" id="ev-date-chips"></div>
+        <input id="ev-date" type="date" style="margin-top:6px">
       </div>
-      <div class="field"><label>Type</label><select id="ev-type"><option value="event">Event (no RSVP)</option><option value="plan">Plan (with RSVP)</option></select></div>
+
+      <div class="field">
+        <label>Time <span style="text-transform:none;font-weight:400;color:var(--text-faint)">(optional)</span></label>
+        <div class="time-chips" id="ev-time-chips"></div>
+        <input id="ev-time" type="time" style="margin-top:6px">
+      </div>
+
+      <div class="field"><label>Where <span style="text-transform:none;font-weight:400;color:var(--text-faint)">(optional)</span></label><input id="ev-location" placeholder="Location" autocomplete="off"></div>
+
+      <button class="collapse-toggle" id="ev-more-toggle" onclick="toggleEvMore()">
+        <span>More options</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="collapse-body" id="ev-more-body">
+        <div class="field"><label>Notes</label><textarea id="ev-desc" rows="2" placeholder="Details..."></textarea></div>
+        <div class="field">
+          <label>Repeat</label>
+          <div class="repeat-pills" id="ev-repeat-pills"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field"><label>Group</label><select id="ev-group"></select></div>
+          <div class="field"><label>Privacy</label><select id="ev-privacy"><option value="everyone">Everyone</option><option value="close">Close Friends</option><option value="me">Just Me</option></select></div>
+        </div>
+        <div class="field"><label>Type</label><select id="ev-type"><option value="event">Event (no RSVP)</option><option value="plan">Plan (with RSVP)</option></select></div>
+      </div>
+
       <div id="ev-err" class="gate-err"></div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn btn-primary btn-full" onclick="saveEvent()">Save</button>
+        <button id="ev-dup-btn" class="btn btn-secondary btn-sm hidden" onclick="duplicateEvent()">Copy</button>
         <button id="ev-delete-btn" class="btn btn-danger btn-sm hidden" onclick="deleteEvent()">Delete</button>
       </div>
     </div>
@@ -790,19 +895,193 @@ input,select,textarea,button{font-family:var(--font)}
 <!-- ============================================================
      JAVASCRIPT
      ============================================================ -->
+<div id="toast" class="toast"></div>
+
+<!-- ============================================================
+     MODAL: Custom confirm/alert/prompt (replaces browser dialogs)
+     ============================================================ -->
+<div id="modal-dialog" class="panel">
+  <div class="panel-backdrop" onclick="modalCancel()"></div>
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(100% - 40px);max-width:340px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;z-index:1;animation:fadeIn .15s ease-out">
+    <div id="modal-msg" style="font-size:15px;margin-bottom:6px"></div>
+    <input id="modal-input" class="hidden" style="width:100%;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:15px;outline:none;margin-top:8px" onkeydown="if(event.key==='Enter')modalOk()">
+    <div id="modal-err" style="color:var(--danger);font-size:12px;min-height:16px;margin-top:4px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button id="modal-cancel-btn" class="btn btn-secondary" style="flex:1" onclick="modalCancel()">Cancel</button>
+      <button id="modal-ok-btn" class="btn btn-primary" style="flex:1" onclick="modalOk()">OK</button>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes fadeIn{from{opacity:0;transform:translate(-50%,-50%) scale(.95)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+</style>
+
 <script>
+/* ==============================================================
+   TOAST & HAPTICS
+   ============================================================== */
+let _toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function buzz(ms=10){ if(navigator.vibrate) try{navigator.vibrate(ms);}catch(e){} }
+
+/* ==============================================================
+   NATURAL LANGUAGE EVENT PARSER
+   Parses "Beers Friday 7pm at The Grand" into structured fields
+   ============================================================== */
+const DAY_WORDS={sunday:0,sun:0,monday:1,mon:1,tuesday:2,tue:2,tues:2,wednesday:3,wed:3,thursday:4,thu:4,thur:4,thurs:4,friday:5,fri:5,saturday:6,sat:6};
+
+function parseEventText(text){
+  if(!text||!text.trim())return null;
+  let working=' '+text.trim()+' ';
+  const result={title:'',date:null,time:null,location:null};
+
+  // --- Location: "at X" or "@ X" (take to end of string) ---
+  const locMatch=working.match(/\s(?:at|@)\s+(.+?)\s*$/i);
+  if(locMatch){
+    // Avoid matching "at 7pm" as a location
+    if(!/^\d{1,2}(:\d{2})?\s*(am|pm)?\s*$/i.test(locMatch[1])){
+      result.location=locMatch[1].trim();
+      working=working.slice(0,locMatch.index)+' ';
+    }
+  }
+
+  // --- Time: 7pm, 7:30pm, 19:00, 7.30pm ---
+  const timeMatch=working.match(/\s(\d{1,2})[:.]?(\d{2})?\s*(am|pm)\b/i)
+                || working.match(/\s(\d{1,2}):(\d{2})\b/);
+  if(timeMatch){
+    let h=parseInt(timeMatch[1],10);
+    const m=timeMatch[2]?parseInt(timeMatch[2],10):0;
+    const ap=(timeMatch[3]||'').toLowerCase();
+    if(ap==='pm'&&h<12)h+=12;
+    if(ap==='am'&&h===12)h=0;
+    if(h<24&&m<60){
+      result.time=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+      working=working.replace(timeMatch[0],' ');
+    }
+  }
+
+  // --- Date ---
+  const now=new Date();
+  const todayDow=now.getDay();
+
+  // "today" / "tonight"
+  if(/\b(today|tonight)\b/i.test(working)){
+    result.date=dk(now.getFullYear(),now.getMonth(),now.getDate());
+    working=working.replace(/\b(today|tonight)\b/i,' ');
+  }
+  // "tomorrow" / "tmrw"
+  else if(/\b(tomorrow|tmrw|tmw)\b/i.test(working)){
+    const d=addDays(now,1);
+    result.date=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    working=working.replace(/\b(tomorrow|tmrw|tmw)\b/i,' ');
+  }
+  // "next friday" / "this friday" / "friday"
+  else {
+    const dayMatch=working.match(/\b(next|this)?\s*(sunday|sun|monday|mon|tuesday|tues|tue|wednesday|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat)\b/i);
+    if(dayMatch){
+      const modifier=(dayMatch[1]||'').toLowerCase();
+      const targetDow=DAY_WORDS[dayMatch[2].toLowerCase()];
+      let diff=targetDow-todayDow;
+      if(diff<=0)diff+=7;              // always look forward
+      if(modifier==='next')diff+=7;     // "next friday" = the one after this coming one
+      const d=addDays(now,diff);
+      result.date=dk(d.getFullYear(),d.getMonth(),d.getDate());
+      working=working.replace(dayMatch[0],' ');
+    }
+    // "on the 15th" / "15th" / "15/3" / "3 march"
+    else {
+      const dmMatch=working.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+      if(dmMatch){
+        const day=parseInt(dmMatch[1],10), mon=parseInt(dmMatch[2],10)-1;
+        let yr=now.getFullYear();
+        const cand=new Date(yr,mon,day);
+        if(cand<now)yr++;
+        result.date=dk(yr,mon,day);
+        working=working.replace(dmMatch[0],' ');
+      } else {
+        const monMatch=working.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i)
+                     ||working.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
+        if(monMatch){
+          let day,monStr;
+          if(/^\d/.test(monMatch[1])){day=parseInt(monMatch[1],10);monStr=monMatch[2];}
+          else{monStr=monMatch[1];day=parseInt(monMatch[2],10);}
+          const mon=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(monStr.toLowerCase().slice(0,3));
+          let yr=now.getFullYear();
+          const cand=new Date(yr,mon,day);
+          if(cand<now)yr++;
+          result.date=dk(yr,mon,day);
+          working=working.replace(monMatch[0],' ');
+        }
+      }
+    }
+  }
+
+  // --- Clean up remaining text as title ---
+  result.title=working.replace(/\s+(on|at|the)\s*$/i,'').replace(/\s+/g,' ').trim();
+  // Capitalise first letter
+  if(result.title)result.title=result.title[0].toUpperCase()+result.title.slice(1);
+  return result;
+}
+
+/* ==============================================================
+   CUSTOM DIALOGS (replaces confirm/alert/prompt for mobile)
+   ============================================================== */
+let _modalResolve=null;
+
+function showModal(msg, opts={}){
+  return new Promise(resolve=>{
+    _modalResolve=resolve;
+    document.getElementById('modal-msg').textContent=msg;
+    document.getElementById('modal-err').textContent='';
+    const inp=document.getElementById('modal-input');
+    if(opts.input){inp.classList.remove('hidden');inp.value=opts.inputValue||'';inp.placeholder=opts.placeholder||'';setTimeout(()=>inp.focus(),100);}
+    else inp.classList.add('hidden');
+    document.getElementById('modal-cancel-btn').classList.toggle('hidden',!!opts.alertOnly);
+    document.getElementById('modal-ok-btn').textContent=opts.okText||'OK';
+    if(opts.danger)document.getElementById('modal-ok-btn').className='btn btn-danger';
+    else document.getElementById('modal-ok-btn').className='btn btn-primary';
+    document.getElementById('modal-ok-btn').style.flex='1';
+    document.getElementById('modal-dialog').classList.add('open');
+  });
+}
+
+function modalOk(){
+  const inp=document.getElementById('modal-input');
+  const hasInput=!inp.classList.contains('hidden');
+  document.getElementById('modal-dialog').classList.remove('open');
+  if(_modalResolve) _modalResolve(hasInput?inp.value:true);
+  _modalResolve=null;
+}
+
+function modalCancel(){
+  document.getElementById('modal-dialog').classList.remove('open');
+  if(_modalResolve) _modalResolve(hasInput()?null:false);
+  _modalResolve=null;
+}
+
+function hasInput(){return !document.getElementById('modal-input').classList.contains('hidden');}
+
+// Shortcuts
+async function appConfirm(msg,opts={}){ return showModal(msg,opts); }
+async function appAlert(msg){ return showModal(msg,{alertOnly:true}); }
+async function appPrompt(msg,defaultVal){ return showModal(msg,{input:true,inputValue:defaultVal||''}); }
+
 /* ==============================================================
    FIREBASE CONFIG — replace with your values
    ============================================================== */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBwrrJr7xR_p8ULAGrQMVKn_XIAhdTJ_cY",
-  authDomain: "cmas-social.firebaseapp.com",
-  databaseURL: "https://cmas-social-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "cmas-social",
-  storageBucket: "cmas-social.firebasestorage.app",
+  apiKey:            "AIzaSyBwrrJr7xR_p8ULAGrQMVKn_XIAhdTJ_cY",
+  authDomain:        "cmas-social.firebaseapp.com",
+  databaseURL:       "https://cmas-social-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "cmas-social",
+  storageBucket:     "cmas-social.firebasestorage.app",
   messagingSenderId: "655550772180",
-  appId: "1:655550772180:web:35eac4d4a7ebe1b5e65c41",
-  measurementId: "G-LPQQ2DTX5D"
+  appId:             "1:655550772180:web:35eac4d4a7ebe1b5e65c41"
 };
 
 /* ==============================================================
@@ -1096,14 +1375,29 @@ function renderWeek(){
     const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
     const col=document.createElement('div');
     col.className='week-day-col'+(key===today?' today':'')+(key===selDate?' selected':'');
-    col.innerHTML=`<div class="week-day-name">${WDAYS[i]}</div><div class="week-day-num">${d.getDate()}</div><div class="week-day-dot${(ebd[key]&&ebd[key].length)?' has-events':''}"></div>`;
-    col.onclick=()=>{selDate=key;renderWeek();};
+    const count=(ebd[key]||[]).length;
+    col.innerHTML=`<div class="week-day-name">${WDAYS[i]}</div><div class="week-day-num">${d.getDate()}</div><div class="week-day-dot${count?' has-events':''}"></div>`;
+    col.onclick=()=>{selDate=key;buzz(5);renderWeek();};
+    attachLongPress(col,()=>{buzz(25);openNewEvent(null,key);});
     strip.appendChild(col);
   }
 
   const sd=parseDate(selDate);
   document.getElementById('selected-day-label').textContent=sd.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
   renderDayList('day-events',selDate);
+  renderUpNext();
+  onQuickAddInput();
+}
+
+/* Long press helper */
+function attachLongPress(el,cb){
+  let timer=null,moved=false;
+  el.addEventListener('touchstart',()=>{moved=false;timer=setTimeout(()=>{if(!moved)cb();},550);},{passive:true});
+  el.addEventListener('touchmove',()=>{moved=true;clearTimeout(timer);},{passive:true});
+  el.addEventListener('touchend',()=>clearTimeout(timer));
+  el.addEventListener('touchcancel',()=>clearTimeout(timer));
+  // Desktop: right-click
+  el.addEventListener('contextmenu',e=>{e.preventDefault();cb();});
 }
 
 function weekPrev(){viewWeekStart=addDays(viewWeekStart,-7);renderWeek();}
@@ -1137,9 +1431,19 @@ function renderMonth(){
     cell.className='month-cell'+(d.other?' other':'')+(key===today?' today':'')+(key===selDate?' selected':'');
     let html=`<div class="month-cell-num">${d.day}</div>`;
     const devs=ebd[key]||[];
-    if(devs.length){html+='<div class="month-cell-dots">';devs.slice(0,3).forEach(ev=>{html+=`<div class="month-dot" style="background:${(users[ev.creator]||{}).color||'#888'}"></div>`;});html+='</div>';}
+    if(devs.length){
+      html+='<div class="month-cell-titles">';
+      devs.slice(0,2).forEach(ev=>{
+        const col=(users[ev.creator]||{}).color||'#888';
+        const label=(ev.emoji?ev.emoji:'')+esc(ev.title);
+        html+=`<div class="month-ev" style="background:${col}">${label}</div>`;
+      });
+      if(devs.length>2)html+=`<div class="month-more">+${devs.length-2}</div>`;
+      html+='</div>';
+    }
     cell.innerHTML=html;
-    cell.onclick=()=>{selDate=key;renderMonth();renderMonthDay();};
+    cell.onclick=()=>{selDate=key;buzz(5);renderMonth();renderMonthDay();};
+    attachLongPress(cell,()=>{buzz(25);openNewEvent(null,key);});
     grid.appendChild(cell);
   });
   renderMonthDay();
@@ -1165,24 +1469,41 @@ function setCalView(v){
 /* ==============================================================
    DAY LIST (shared between views)
    ============================================================== */
+function buildEventCard(ev,showDate){
+  const wrap=document.createElement('div');wrap.className='ev-swipe';
+  const cr=users[ev.creator]||{};
+  let badges='';
+  if(ev.type==='plan'&&ev.rsvps){
+    const v=Object.values(ev.rsvps);
+    const g=v.filter(s=>s==='going').length,m=v.filter(s=>s==='maybe').length;
+    if(g)badges+=`<span class="ev-badge" style="background:var(--success-dim);color:var(--success)">${g} going</span>`;
+    if(m)badges+=`<span class="ev-badge" style="background:var(--warning-dim);color:var(--warning)">${m} maybe</span>`;
+  }
+  if(ev.repeat&&ev.repeat!=='none')badges+=`<span class="ev-badge" style="background:var(--surface-3);color:var(--text-dim)">🔁 ${ev.repeat}</span>`;
+  let meta='';
+  if(showDate){
+    const d=parseDate(ev.date);
+    meta=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+(ev.time?' at '+ev.time:'');
+  } else {
+    meta=ev.time?ev.time:'All day';
+  }
+  if(ev.location)meta+=' · '+esc(ev.location);
+
+  wrap.innerHTML=`<div class="ev-swipe-bg">Delete</div><div class="ev-swipe-fg"><div class="ev-card" style="margin-bottom:0;border:none"><div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="ev-meta">${meta}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div></div></div>`;
+  wrap.querySelector('.ev-swipe-fg').onclick=()=>openDetail(ev.id);
+  attachSwipe(wrap,ev.id);
+  return wrap;
+}
+
 function renderDayList(containerId,dateKey){
   const c=document.getElementById(containerId);
   const evts=visibleEvents().filter(e=>e.date===dateKey).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  if(!evts.length){c.innerHTML='<div class="day-empty">Nothing planned</div>';return;}
+  if(!evts.length){
+    c.innerHTML=`<div class="day-empty">Nothing planned<br><button class="btn btn-sm btn-secondary" style="margin-top:10px" onclick="openNewEvent()">+ Add something</button></div>`;
+    return;
+  }
   c.innerHTML='';
-  evts.forEach(ev=>{
-    const card=document.createElement('div');card.className='ev-card';card.onclick=()=>openDetail(ev.id);
-    const cr=users[ev.creator]||{};
-    let badges='';
-    if(ev.type==='plan'&&ev.rsvps){
-      const v=Object.values(ev.rsvps);
-      const g=v.filter(s=>s==='going').length,m=v.filter(s=>s==='maybe').length;
-      if(g)badges+=`<span class="ev-badge" style="background:var(--success-dim);color:var(--success)">${g} going</span>`;
-      if(m)badges+=`<span class="ev-badge" style="background:var(--warning-dim);color:var(--warning)">${m} maybe</span>`;
-    }
-    card.innerHTML=`<div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${esc(ev.title)}</div><div class="ev-meta">${ev.time?ev.time:'All day'}${ev.location?' · '+esc(ev.location):''}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div>`;
-    c.appendChild(card);
-  });
+  evts.forEach(ev=>c.appendChild(buildEventCard(ev,false)));
 }
 
 /* ==============================================================
@@ -1307,11 +1628,12 @@ async function saveGroup(){
 /* ==============================================================
    EVENT CRUD
    ============================================================== */
-function openNewEvent(type){
+function openNewEvent(type,forDate){
   document.getElementById('panel-event-title').textContent='New Event';
   document.getElementById('ev-id').value='';
   document.getElementById('ev-title').value='';
-  document.getElementById('ev-date').value=selDate;
+  const d=forDate||selDate;
+  document.getElementById('ev-date').value=d;
   document.getElementById('ev-time').value='';
   document.getElementById('ev-location').value='';
   document.getElementById('ev-desc').value='';
@@ -1319,7 +1641,12 @@ function openNewEvent(type){
   document.getElementById('ev-type').value=type||'event';
   document.getElementById('ev-err').textContent='';
   document.getElementById('ev-delete-btn').classList.add('hidden');
+  document.getElementById('ev-dup-btn').classList.add('hidden');
+  document.getElementById('ev-more-toggle').classList.remove('open');
+  document.getElementById('ev-more-body').classList.remove('open');
+  renderEmojiRow('');renderDateChips(d);renderTimeChips('');renderRepeatPills('none');
   renderGroupOpts();openPanel('panel-event');
+  setTimeout(()=>document.getElementById('ev-title').focus(),150);
 }
 
 async function saveEvent(){
@@ -1328,15 +1655,52 @@ async function saveEvent(){
   const date=document.getElementById('ev-date').value;
   if(!title){document.getElementById('ev-err').textContent='Give it a title';return;}
   if(!date){document.getElementById('ev-err').textContent='Pick a date';return;}
-  const data={title,date,time:document.getElementById('ev-time').value,location:document.getElementById('ev-location').value.trim(),desc:document.getElementById('ev-desc').value.trim(),groupId:document.getElementById('ev-group').value,privacy:document.getElementById('ev-privacy').value,type:document.getElementById('ev-type').value,creator:me.name,updated:Date.now()};
-  if(id)await db.ref('events/'+id).update(data);
-  else{data.rsvps={};data.created=Date.now();await db.ref('events').push().set(data);}
+  const emoji=document.getElementById('ev-emoji-row').dataset.selected||'';
+  const repeat=document.getElementById('ev-repeat-pills').dataset.selected||'none';
+  const data={title,date,time:document.getElementById('ev-time').value,location:document.getElementById('ev-location').value.trim(),desc:document.getElementById('ev-desc').value.trim(),groupId:document.getElementById('ev-group').value,privacy:document.getElementById('ev-privacy').value,type:document.getElementById('ev-type').value,emoji,repeat,creator:me.name,updated:Date.now()};
+
+  if(id){
+    await db.ref('events/'+id).update(data);
+    toast('Updated');
+  } else {
+    data.rsvps={};data.created=Date.now();
+    await db.ref('events').push().set(data);
+    // Create repeat occurrences (next 12)
+    if(repeat!=='none'){
+      const base=parseDate(date);
+      const step=repeat==='weekly'?7:repeat==='fortnightly'?14:0;
+      for(let i=1;i<=11;i++){
+        let nd;
+        if(repeat==='monthly'){nd=new Date(base.getFullYear(),base.getMonth()+i,base.getDate());}
+        else{nd=addDays(base,step*i);}
+        const copy={...data,date:dk(nd.getFullYear(),nd.getMonth(),nd.getDate()),rsvps:{},created:Date.now()};
+        await db.ref('events').push().set(copy);
+      }
+      toast('Added '+title+' ×12');
+    } else {
+      toast('Added');
+    }
+  }
+  buzz();
+  // Jump to that date
+  selDate=date;viewWeekStart=getWeekStart(parseDate(date));
   closePanel('panel-event');
+}
+
+async function duplicateEvent(){
+  const id=document.getElementById('ev-id').value;
+  const ev=events[id];if(!ev)return;
+  const copy={...ev};delete copy.id;
+  copy.rsvps={};copy.created=Date.now();copy.creator=me.name;
+  await db.ref('events').push().set(copy);
+  toast('Copied');closePanel('panel-event');
 }
 
 async function deleteEvent(){
   const id=document.getElementById('ev-id').value;
-  if(!id||!confirm('Delete this event?'))return;
+  if(!id)return;
+  const yes=await appConfirm('Delete this event?',{okText:'Delete',danger:true});
+  if(!yes)return;
   await db.ref('events/'+id).remove();
   await db.ref('chat/'+id).remove();
   closePanel('panel-event');closePanel('panel-detail');
@@ -1406,6 +1770,10 @@ function editFromDetail(){
   document.getElementById('ev-type').value=ev.type||'event';
   document.getElementById('ev-err').textContent='';
   document.getElementById('ev-delete-btn').classList.remove('hidden');
+  document.getElementById('ev-dup-btn').classList.remove('hidden');
+  document.getElementById('ev-more-toggle').classList.remove('open');
+  document.getElementById('ev-more-body').classList.remove('open');
+  renderEmojiRow(ev.emoji||'');renderDateChips(ev.date);renderTimeChips(ev.time||'');renderRepeatPills(ev.repeat||'none');
   renderGroupOpts();if(ev.groupId)document.getElementById('ev-group').value=ev.groupId;
   openPanel('panel-event');
 }
@@ -1504,12 +1872,16 @@ async function savePoll(){
 
 async function deletePoll(){
   const id=document.getElementById('poll-id').value;
-  if(!id||!confirm('Delete this poll?'))return;
+  if(!id)return;
+  const yes=await appConfirm('Delete this poll?',{okText:'Delete',danger:true});
+  if(!yes)return;
   await db.ref('polls/'+id).remove();closePanel('panel-poll');
 }
 
 async function deletePoll2(){
-  if(!activePollId||!confirm('Delete this poll?'))return;
+  if(!activePollId)return;
+  const yes=await appConfirm('Delete this poll?',{okText:'Delete',danger:true});
+  if(!yes)return;
   await db.ref('polls/'+activePollId).remove();closePanel('panel-poll-detail');activePollId=null;
 }
 
@@ -1637,7 +2009,8 @@ async function lockPoll(){
   const totals=opts.map(()=>0);
   Object.values(votes).forEach(uv=>{Object.entries(uv).forEach(([i,v])=>{if(v==='yes')totals[+i]++;});});
   const maxIdx=totals.indexOf(Math.max(...totals));
-  if(!confirm('Lock "'+opts[maxIdx].label+'" as the winner?'))return;
+  const yes=await appConfirm('Lock "'+opts[maxIdx].label+'" as the winner?',{okText:'Lock it'});
+  if(!yes)return;
   await db.ref('polls/'+activePollId).update({locked:true,lockedOption:maxIdx});
 }
 
@@ -1695,9 +2068,9 @@ function addWheelItem(){
 
 async function saveWheel(){
   const items=wheelItems.filter(i=>i.trim());
-  if(items.length<2){alert('Add at least 2 items');return;}
-  const name=prompt('Wheel name:',currentWheelId&&wheels[currentWheelId]?wheels[currentWheelId].name:'');
-  if(!name)return;
+  if(items.length<2){await appAlert('Add at least 2 items');return;}
+  const name=await appPrompt('Wheel name:',currentWheelId&&wheels[currentWheelId]?wheels[currentWheelId].name:'');
+  if(!name||!name.trim())return;
   const itemsObj={};items.forEach((v,i)=>{itemsObj[i]=v;});
   if(currentWheelId){
     await db.ref('wheels/'+currentWheelId).update({name,items:itemsObj});
@@ -1767,7 +2140,7 @@ function drawWheel(){
 function spinWheel(){
   if(wheelSpinning)return;
   const items=wheelItems.filter(i=>i.trim());
-  if(items.length<2){alert('Need at least 2 items');return;}
+  if(items.length<2){appAlert('Need at least 2 items');return;}
 
   wheelSpinning=true;
   document.getElementById('wheel-result').textContent='';
@@ -1797,6 +2170,245 @@ function spinWheel(){
       canvas.style.transform=`rotate(${finalDeg}deg)`;
     },100);
   },4200);
+}
+
+/* ==============================================================
+   QUICK ADD
+   ============================================================== */
+let quickParsed=null;
+
+function onQuickAddInput(){
+  const txt=document.getElementById('quick-add').value;
+  const box=document.getElementById('quick-parse');
+  if(!txt.trim()){box.innerHTML='';quickParsed=null;return;}
+  const p=parseEventText(txt);
+  quickParsed=p;
+  let chips='';
+  if(p.date){
+    const d=parseDate(p.date);
+    chips+=`<span class="quick-parse-chip">📅 ${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</span>`;
+  }
+  if(p.time)chips+=`<span class="quick-parse-chip">🕐 ${p.time}</span>`;
+  if(p.location)chips+=`<span class="quick-parse-chip">📍 ${esc(p.location)}</span>`;
+  if(chips)box.innerHTML=chips+'<span style="color:var(--text-faint)">Press Enter to add</span>';
+  else box.innerHTML='<span style="color:var(--text-faint)">Press Enter to add on '+parseDate(selDate).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+'</span>';
+}
+
+async function submitQuickAdd(){
+  const txt=document.getElementById('quick-add').value.trim();
+  if(!txt)return;
+  const p=quickParsed||parseEventText(txt);
+  if(!p||!p.title){toast('Need a title');return;}
+
+  const data={
+    title:p.title,
+    date:p.date||selDate,
+    time:p.time||'',
+    location:p.location||'',
+    desc:'',groupId:'',privacy:'everyone',type:'event',
+    emoji:guessEmoji(p.title),
+    creator:me.name,rsvps:{},created:Date.now(),updated:Date.now()
+  };
+  await db.ref('events').push().set(data);
+  document.getElementById('quick-add').value='';
+  document.getElementById('quick-parse').innerHTML='';
+  quickParsed=null;
+  buzz();
+  const d=parseDate(data.date);
+  toast('Added: '+data.title+' on '+d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}));
+  // Jump to the date we just added to
+  if(data.date!==selDate){
+    selDate=data.date;
+    viewWeekStart=getWeekStart(parseDate(data.date));
+    renderWeek();
+  }
+}
+
+/* Guess a sensible emoji from the title */
+const EMOJI_HINTS=[
+  [/\b(beer|beers|pub|drinks|bar|pint)\b/i,'🍺'],
+  [/\b(coffee|brew|cafe|espresso|latte)\b/i,'☕'],
+  [/\b(dinner|lunch|brunch|breakfast|eat|food|restaurant|feed)\b/i,'🍽️'],
+  [/\b(birthday|bday|party)\b/i,'🎉'],
+  [/\b(movie|cinema|film)\b/i,'🎬'],
+  [/\b(gym|run|ride|training|workout|swim|surf)\b/i,'🏃'],
+  [/\b(footy|game|match|sport|cricket|soccer)\b/i,'⚽'],
+  [/\b(gig|concert|music|band)\b/i,'🎵'],
+  [/\b(flight|airport|trip|travel|holiday)\b/i,'✈️'],
+  [/\b(meeting|work|call|standup)\b/i,'💼'],
+  [/\b(camp|hike|walk|beach)\b/i,'🏕️'],
+  [/\b(wedding)\b/i,'💍'],
+  [/\b(golf)\b/i,'⛳'],
+];
+function guessEmoji(title){
+  for(const [re,em] of EMOJI_HINTS){ if(re.test(title))return em; }
+  return '';
+}
+
+const EMOJI_CHOICES=['','🍺','☕','🍽️','🎉','🎬','🏃','⚽','🎵','✈️','💼','🏕️','💍','⛳','🎂','🏖️'];
+
+function renderEmojiRow(selected){
+  const c=document.getElementById('ev-emoji-row');c.innerHTML='';
+  EMOJI_CHOICES.forEach(em=>{
+    const b=document.createElement('button');
+    b.className='emoji-btn'+(em===selected?' active':'');
+    b.textContent=em||'∅';
+    b.onclick=()=>{c.querySelectorAll('.emoji-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');c.dataset.selected=em;};
+    c.appendChild(b);
+  });
+  c.dataset.selected=selected||'';
+}
+
+/* ==============================================================
+   DATE & TIME CHIPS
+   ============================================================== */
+function renderDateChips(currentDate){
+  const c=document.getElementById('ev-date-chips');c.innerHTML='';
+  const now=new Date();
+  const opts=[
+    ['Today',0],['Tomorrow',1]
+  ];
+  // Next Fri, Sat, Sun
+  [5,6,0].forEach(dow=>{
+    let diff=dow-now.getDay(); if(diff<=0)diff+=7;
+    const d=addDays(now,diff);
+    opts.push([WDAYS[(dow+6)%7],diff]);
+  });
+  opts.forEach(([label,offset])=>{
+    const d=addDays(now,offset);
+    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    const b=document.createElement('button');
+    b.className='date-chip'+(key===currentDate?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{
+      document.getElementById('ev-date').value=key;
+      c.querySelectorAll('.date-chip').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');buzz(5);
+    };
+    c.appendChild(b);
+  });
+}
+
+function renderTimeChips(currentTime){
+  const c=document.getElementById('ev-time-chips');c.innerHTML='';
+  const times=[['All day',''],['9am','09:00'],['12pm','12:00'],['5pm','17:00'],['6pm','18:00'],['7pm','19:00'],['8pm','20:00']];
+  times.forEach(([label,val])=>{
+    const b=document.createElement('button');
+    b.className='time-chip'+(val===currentTime?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{
+      document.getElementById('ev-time').value=val;
+      c.querySelectorAll('.time-chip').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');buzz(5);
+    };
+    c.appendChild(b);
+  });
+}
+
+const REPEAT_OPTS=[['Once','none'],['Weekly','weekly'],['Fortnightly','fortnightly'],['Monthly','monthly']];
+function renderRepeatPills(current){
+  const c=document.getElementById('ev-repeat-pills');c.innerHTML='';
+  REPEAT_OPTS.forEach(([label,val])=>{
+    const b=document.createElement('button');
+    b.className='repeat-pill'+((current||'none')===val?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{c.querySelectorAll('.repeat-pill').forEach(x=>x.classList.remove('active'));b.classList.add('active');c.dataset.selected=val;};
+    c.appendChild(b);
+  });
+  c.dataset.selected=current||'none';
+}
+
+function toggleEvMore(){
+  const t=document.getElementById('ev-more-toggle');
+  const b=document.getElementById('ev-more-body');
+  t.classList.toggle('open');b.classList.toggle('open');
+}
+
+/* ==============================================================
+   UP NEXT
+   ============================================================== */
+function renderUpNext(){
+  const c=document.getElementById('upnext');
+  const today=todayStr();
+  const upcoming=visibleEvents()
+    .filter(e=>e.date>=today)
+    .sort((a,b)=>a.date===b.date?(a.time||'').localeCompare(b.time||''):(a.date>b.date?1:-1))
+    .slice(0,3);
+  if(!upcoming.length){c.innerHTML='';return;}
+  let html='<div class="upnext-head">Up next</div>';
+  upcoming.forEach(ev=>{
+    const d=parseDate(ev.date);
+    const days=Math.round((d-parseDate(today))/86400000);
+    const when=days===0?'Today':days===1?'Tomorrow':days<7?d.toLocaleDateString('en-AU',{weekday:'short'}):d.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    const cr=users[ev.creator]||{};
+    html+=`<div class="upnext-card" onclick="openDetail('${ev.id}')"><span class="upnext-when">${when}</span><span style="width:3px;height:22px;border-radius:2px;background:${cr.color||'#888'};flex-shrink:0"></span><span class="upnext-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</span>${ev.time?`<span class="upnext-time">${ev.time}</span>`:''}</div>`;
+  });
+  c.innerHTML=html;
+}
+
+/* ==============================================================
+   SEARCH
+   ============================================================== */
+function toggleSearch(){
+  const bar=document.getElementById('search-bar');
+  const results=document.getElementById('search-results');
+  const normal=document.getElementById('week-normal');
+  const isOpen=bar.classList.contains('show');
+  if(isOpen){
+    bar.classList.remove('show');results.classList.add('hidden');normal.classList.remove('hidden');
+    document.getElementById('search-input').value='';
+  } else {
+    bar.classList.add('show');normal.classList.add('hidden');results.classList.remove('hidden');
+    setTimeout(()=>document.getElementById('search-input').focus(),100);
+    renderSearch();
+  }
+}
+
+function renderSearch(){
+  const q=document.getElementById('search-input').value.trim().toLowerCase();
+  const c=document.getElementById('search-results');
+  if(!q){c.innerHTML='<div class="day-empty">Type to search your events</div>';return;}
+  const matches=visibleEvents().filter(e=>
+    (e.title||'').toLowerCase().includes(q)||
+    (e.location||'').toLowerCase().includes(q)||
+    (e.desc||'').toLowerCase().includes(q)
+  ).sort((a,b)=>a.date>b.date?1:-1);
+  if(!matches.length){c.innerHTML='<div class="day-empty">Nothing found</div>';return;}
+  c.innerHTML='';
+  matches.forEach(ev=>c.appendChild(buildEventCard(ev,true)));
+}
+
+/* ==============================================================
+   SWIPE TO DELETE
+   ============================================================== */
+function attachSwipe(el,eventId){
+  let startX=0,curX=0,dragging=false;
+  const fg=el.querySelector('.ev-swipe-fg');
+  el.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;dragging=true;fg.classList.add('swiping');},{passive:true});
+  el.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    curX=e.touches[0].clientX-startX;
+    if(curX<0)fg.style.transform=`translateX(${Math.max(curX,-100)}px)`;
+  },{passive:true});
+  el.addEventListener('touchend',async ()=>{
+    dragging=false;fg.classList.remove('swiping');
+    if(curX<-70){
+      buzz(20);
+      const ev=events[eventId];
+      if(ev&&ev.creator===me.name){
+        fg.style.transform='translateX(-100%)';
+        const yes=await appConfirm('Delete "'+ev.title+'"?',{okText:'Delete',danger:true});
+        if(yes){await db.ref('events/'+eventId).remove();await db.ref('chat/'+eventId).remove();toast('Deleted');}
+        else fg.style.transform='translateX(0)';
+      } else {
+        fg.style.transform='translateX(0)';
+        toast('Only the creator can delete this');
+      }
+    } else {
+      fg.style.transform='translateX(0)';
+    }
+    curX=0;
+  });
 }
 
 /* ==============================================================
@@ -1857,7 +2469,8 @@ function renderMembers(){
 }
 
 async function resetOwnCode(){
-  if(!confirm('Generate a new recovery code? Your old code will stop working.'))return;
+  const yes=await appConfirm('Generate a new recovery code? Your old code will stop working.',{okText:'Reset'});
+  if(!yes)return;
   const code=generateCode();
   const hash=await sha256(code);
   await db.ref('users/'+encKey(me.name)+'/codeHash').set(hash);
@@ -1869,7 +2482,8 @@ async function resetOwnCode(){
 
 async function adminResetCode(name){
   if(!isAdmin())return;
-  if(!confirm('Reset recovery code for '+name+'? Their old code will stop working.'))return;
+  const yes=await appConfirm('Reset recovery code for '+name+'? Their old code will stop working.',{okText:'Reset'});
+  if(!yes)return;
   const code=generateCode();
   const hash=await sha256(code);
   await db.ref('users/'+encKey(name)+'/codeHash').set(hash);
@@ -1880,7 +2494,8 @@ async function adminResetCode(name){
 
 async function adminRemoveUser(name){
   if(!isAdmin())return;
-  if(!confirm('Remove '+name+'? This deletes their account and all their events.'))return;
+  const yes=await appConfirm('Remove '+name+'? This deletes their account and all their events.',{okText:'Remove',danger:true});
+  if(!yes)return;
   // Remove user
   await db.ref('users/'+encKey(name)).remove();
   // Remove their events
@@ -1902,7 +2517,8 @@ async function adminRemoveUser(name){
 
 async function adminPromote(name){
   if(!isAdmin())return;
-  if(!confirm('Make '+name+' an admin? This gives them full user management access.'))return;
+  const yes=await appConfirm('Make '+name+' an admin? This gives them full user management access.',{okText:'Promote'});
+  if(!yes)return;
   await db.ref('users/'+encKey(name)+'/admin').set(true);
   renderMembers();
 }
@@ -1917,9 +2533,42 @@ function closePanel(id){
 }
 
 /* ==============================================================
+   SWIPE NAVIGATION (weeks / months)
+   ============================================================== */
+function attachHorizontalSwipe(el,onLeft,onRight){
+  let sx=0,sy=0,tracking=false;
+  el.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;tracking=true;
+  },{passive:true});
+  el.addEventListener('touchend',e=>{
+    if(!tracking)return;tracking=false;
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    // Only trigger if mostly horizontal and far enough
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.8){
+      buzz(10);
+      if(dx<0)onLeft();else onRight();
+    }
+  },{passive:true});
+}
+
+function initSwipeNav(){
+  const weekStrip=document.getElementById('week-strip');
+  if(weekStrip)attachHorizontalSwipe(weekStrip,weekNext,weekPrev);
+  const dayEvents=document.getElementById('day-events');
+  if(dayEvents)attachHorizontalSwipe(dayEvents,weekNext,weekPrev);
+  const monthGrid=document.getElementById('month-grid');
+  if(monthGrid)attachHorizontalSwipe(monthGrid,monthNext,monthPrev);
+  const availGrid=document.getElementById('avail-grid');
+  if(availGrid)attachHorizontalSwipe(availGrid,availNext,availPrev);
+}
+
+/* ==============================================================
    BOOT
    ============================================================== */
 init();
+setTimeout(initSwipeNav,500);
 </script>
 </body>
 </html>
