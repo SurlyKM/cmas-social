@@ -795,7 +795,7 @@ input,select,textarea,button{font-family:var(--font)}
    FIREBASE CONFIG — replace with your values
    ============================================================== */
 const FIREBASE_CONFIG = {
- apiKey: "AIzaSyBwrrJr7xR_p8ULAGrQMVKn_XIAhdTJ_cY",
+  apiKey: "AIzaSyBwrrJr7xR_p8ULAGrQMVKn_XIAhdTJ_cY",
   authDomain: "cmas-social.firebaseapp.com",
   databaseURL: "https://cmas-social-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "cmas-social",
@@ -1719,21 +1719,47 @@ function drawWheel(){
   ctx.clearRect(0,0,560,560);
   if(items.length===0){
     ctx.fillStyle='#333';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#888';ctx.font='600 20px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';ctx.fillText('Add items below',cx,cy);
+    ctx.fillStyle='#888';ctx.font='600 20px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Add items below',cx,cy);
     return;
   }
   const slice=Math.PI*2/items.length;
   items.forEach((item,i)=>{
+    // Draw segment
+    const startAngle=i*slice-Math.PI/2;
+    const endAngle=(i+1)*slice-Math.PI/2;
     ctx.beginPath();ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,i*slice-Math.PI/2,(i+1)*slice-Math.PI/2);
+    ctx.arc(cx,cy,r,startAngle,endAngle);
     ctx.closePath();
     ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;ctx.stroke();
-    // Label
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(i*slice+slice/2-Math.PI/2);
-    ctx.fillStyle='#fff';ctx.font='600 13px "Plus Jakarta Sans",sans-serif';ctx.textAlign='center';
-    const label=item.length>14?item.slice(0,13)+'…':item;
-    ctx.fillText(label,0,-r*0.6);
+    ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=2;ctx.stroke();
+
+    // Draw label along the middle of the segment
+    const midAngle=startAngle+slice/2;
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(midAngle);
+
+    // Truncate label
+    const maxLen=items.length>8?10:items.length>5?14:18;
+    const label=item.length>maxLen?item.slice(0,maxLen-1)+'…':item;
+    const fontSize=items.length>10?12:items.length>6?14:16;
+
+    // Text outline for readability
+    ctx.font=`700 ${fontSize}px "Plus Jakarta Sans",sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+
+    // Position text at 60% of radius
+    const textR=r*0.62;
+
+    // Draw text with dark outline for contrast
+    ctx.strokeStyle='rgba(0,0,0,.6)';
+    ctx.lineWidth=3;
+    ctx.lineJoin='round';
+    ctx.strokeText(label,textR,0);
+    ctx.fillStyle='#fff';
+    ctx.fillText(label,textR,0);
+
     ctx.restore();
   });
 }
