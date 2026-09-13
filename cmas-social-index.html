@@ -460,6 +460,14 @@ input,select,textarea,button{font-family:var(--font)}
 .wheelpick-row{display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .wheelpick-row:active{background:var(--surface-3)}
 
+/* Mode switch (Event / Plan / Away) */
+.mode-switch{display:flex;gap:4px;background:var(--surface-2);border-radius:var(--radius);padding:4px;margin-bottom:6px}
+.mode-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:none;border-radius:9px;background:none;color:var(--text-dim);font:600 12px var(--font);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.mode-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.mode-btn.active[data-mode="away"]{color:var(--awayc)}
+.mode-emoji{font-size:17px;line-height:1}
+.mode-hint{font-size:12px;color:var(--text-faint);text-align:center;margin-bottom:14px;min-height:16px}
+
 /* Profile */
 .header-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);cursor:pointer;color:#fff;font:700 12px var(--font);display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;padding:0}
 .header-avatar:active{transform:scale(.93)}
@@ -653,7 +661,10 @@ input,select,textarea,button{font-family:var(--font)}
           <button class="view-toggle-btn active" data-av="heat" onclick="setAvailView('heat')">Heatmap</button>
           <button class="view-toggle-btn" data-av="grid" onclick="setAvailView('grid')">Grid</button>
         </div>
-        <button class="btn btn-sm btn-primary" onclick="openAwayPanel()">I'm away</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-secondary" onclick="openAwayPanel()">My away</button>
+          <button class="btn btn-sm btn-primary" onclick="openNewEvent('away')">I'm away</button>
+        </div>
       </div>
 
       <div id="avail-heat" style="flex:1;overflow-y:auto;padding-bottom:80px">
@@ -744,9 +755,24 @@ input,select,textarea,button{font-family:var(--font)}
     </div>
     <div class="panel-scroll">
       <input type="hidden" id="ev-id">
-      <div class="field"><label>What</label><input id="ev-title" placeholder="What's happening?" autocomplete="off"></div>
+      <input type="hidden" id="ev-away-id">
 
-      <div class="field">
+      <div class="mode-switch" id="ev-mode-switch">
+        <button class="mode-btn active" data-mode="event" onclick="setEventMode('event')">
+          <span class="mode-emoji">📅</span><span>Event</span>
+        </button>
+        <button class="mode-btn" data-mode="plan" onclick="setEventMode('plan')">
+          <span class="mode-emoji">🗳️</span><span>Plan</span>
+        </button>
+        <button class="mode-btn" data-mode="away" onclick="setEventMode('away')">
+          <span class="mode-emoji">🌴</span><span>Away</span>
+        </button>
+      </div>
+      <div class="mode-hint" id="ev-mode-hint"></div>
+
+      <div class="field"><label id="ev-title-label">What</label><input id="ev-title" placeholder="What's happening?" autocomplete="off"></div>
+
+      <div class="field" id="ev-emoji-field">
         <label>Icon</label>
         <div class="emoji-row" id="ev-emoji-row"></div>
       </div>
@@ -769,13 +795,23 @@ input,select,textarea,button{font-family:var(--font)}
         </div>
       </div>
 
-      <div class="field">
+      <div class="field" id="ev-time-field">
         <label>Time <span style="text-transform:none;font-weight:400;color:var(--text-faint)">(optional)</span></label>
         <div class="time-chips" id="ev-time-chips"></div>
         <input id="ev-time" type="time" style="margin-top:6px">
       </div>
 
-      <div class="field"><label>Where <span style="text-transform:none;font-weight:400;color:var(--text-faint)">(optional)</span></label><input id="ev-location" placeholder="Location" autocomplete="off"></div>
+      <div class="field hidden" id="ev-part-field">
+        <label>Part of day</label>
+        <div class="part-pills" id="ev-part-pills"></div>
+      </div>
+
+      <div class="field" id="ev-location-field"><label>Where <span style="text-transform:none;font-weight:400;color:var(--text-faint)">(optional)</span></label><input id="ev-location" placeholder="Location" autocomplete="off"></div>
+
+      <div class="field">
+        <label>Repeat</label>
+        <div class="repeat-pills" id="ev-repeat-pills"></div>
+      </div>
 
       <button class="collapse-toggle" id="ev-more-toggle" onclick="toggleEvMore()">
         <span>More options</span>
@@ -783,15 +819,10 @@ input,select,textarea,button{font-family:var(--font)}
       </button>
       <div class="collapse-body" id="ev-more-body">
         <div class="field"><label>Notes</label><textarea id="ev-desc" rows="2" placeholder="Details..."></textarea></div>
-        <div class="field">
-          <label>Repeat</label>
-          <div class="repeat-pills" id="ev-repeat-pills"></div>
-        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="field"><label>Group</label><select id="ev-group"></select></div>
           <div class="field"><label>Privacy</label><select id="ev-privacy"><option value="everyone">Everyone</option><option value="close">Close Friends</option><option value="me">Just Me</option></select></div>
         </div>
-        <div class="field"><label>Type</label><select id="ev-type"><option value="event">Event (no RSVP)</option><option value="plan">Plan (with RSVP)</option></select></div>
       </div>
 
       <div id="ev-err" class="gate-err"></div>
@@ -956,42 +987,15 @@ input,select,textarea,button{font-family:var(--font)}
     </div>
     <div class="panel-scroll">
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px">These only show in the Free tab so everyone can see your availability. They don't appear as events.</p>
-      <input type="hidden" id="aw-id">
-      <div class="field"><label>Reason <span style="text-transform:none;font-weight:400;color:var(--text-faint)">(optional)</span></label><input id="aw-reason" placeholder="Holiday, work, etc" autocomplete="off"></div>
-      <div class="field">
-        <label>From</label>
-        <div class="date-chips" id="aw-date-chips"></div>
-        <input id="aw-date" type="date" style="margin-top:6px" onchange="renderAwayEndChips();updateAwayHint()">
-      </div>
-      <div class="field">
-        <label>Part of day</label>
-        <div class="part-pills" id="aw-part-pills"></div>
-      </div>
-      <div class="field">
-        <div class="multiday-toggle" id="aw-multi-btn" onclick="toggleAwayMulti()" style="cursor:pointer">
-          <span class="multiday-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
-          <span>More than one day</span>
-        </div>
-        <div id="aw-end-wrap" class="hidden" style="margin-top:8px">
-          <div class="date-chips" id="aw-end-chips"></div>
-          <input id="aw-enddate" type="date" style="margin-top:6px" onchange="updateAwayHint()">
-        </div>
-      </div>
-      <div class="field">
-        <label>Repeat</label>
-        <div class="repeat-pills" id="aw-repeat-pills"></div>
-      </div>
-      <div id="aw-hint" style="font-size:12px;color:var(--accent);min-height:16px;margin-bottom:6px"></div>
-      <div id="aw-err" class="gate-err"></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary btn-full" onclick="saveAway()">Save</button>
-        <button id="aw-cancel-btn" class="btn btn-secondary btn-sm hidden" onclick="resetAwayForm()">Cancel</button>
-      </div>
-
+      <button class="btn btn-primary btn-full" onclick="closePanel('panel-away');openNewEvent('away')" style="margin-bottom:18px">+ Mark yourself away</button>
+      <div class="settings-heading">Your away blocks</div>
+      <div id="away-list"></div>
       <div style="margin-top:22px">
-        <div class="settings-heading">Your away blocks</div>
-        <div id="away-list"></div>
+        <div class="settings-heading">Convert an event</div>
+        <p style="font-size:12px;color:var(--text-faint);margin-bottom:8px">Made an event just to show you're unavailable? Move it across.</p>
+        <div id="convert-list"></div>
       </div>
+    
     </div>
   </div>
 </div>
@@ -1251,6 +1255,19 @@ function parseEventText(text){
     }
   }
 
+  // "next week" / "this week" — Monday to Sunday of that week
+  if(!result.date){
+    const weekMatch=working.match(/\b(next|this)\s+week\b/i);
+    if(weekMatch){
+      const mondayThis=getWeekStart(now);
+      const start=weekMatch[1].toLowerCase()==='next'?addDays(mondayThis,7):mondayThis;
+      const end=addDays(start,6);
+      result.date=dk(start.getFullYear(),start.getMonth(),start.getDate());
+      result.endDate=dk(end.getFullYear(),end.getMonth(),end.getDate());
+      working=working.replace(weekMatch[0],' ');
+    }
+  }
+
   // "for 3 days" / "3 day trip" / "for a week" / "for the weekend"
   let durationDays=0;
   const durMatch=working.match(/\bfor\s+(\d{1,2})\s*(?:day|days|night|nights)\b/i)
@@ -1322,6 +1339,16 @@ function parseEventText(text){
     const s=parseDate(result.date);
     const e=addDays(s,durationDays-1);
     result.endDate=dk(e.getFullYear(),e.getMonth(),e.getDate());
+  }
+
+  // --- Away phrasing: "away Friday", "on leave next week", "off Tuesday" ---
+  const awayRe=/\b(away|on leave|annual leave|day off|off work|unavailable|out of town|overseas|interstate|on holiday|holidays?)\b/i;
+  if(awayRe.test(working)||/^\s*off\s+/i.test(working)){
+    result.isAway=true;
+    const hit=working.match(awayRe);
+    result.awayReason=hit?hit[1].replace(/^\w/,c=>c.toUpperCase()):'Away';
+    working=working.replace(awayRe,' ').replace(/^\s*off\s+/i,' ');
+    working=working.replace(/\b(i'?m|i am|we'?re|we are)\b/gi,' ');
   }
 
   // --- Clean up remaining text as title ---
@@ -1638,6 +1665,7 @@ function startApp() {
     events={};s.forEach(c=>{events[c.key]={id:c.key,...c.val()};});
     renderAll();
     if(detailId&&events[detailId])renderDetail(detailId);
+    if(document.getElementById('panel-away').classList.contains('open'))renderConvertList();
   });
   db.ref('groups').on('value',s=>{
     const next={};
@@ -2205,97 +2233,65 @@ function planFromWho(){
 const PART_OPTS=[['All day','all'],['Morning','am'],['Afternoon','pm']];
 
 function openAwayPanel(){
-  resetAwayForm();
   renderAwayList();
+  renderConvertList();
   openPanel('panel-away');
 }
 
-function resetAwayForm(){
-  document.getElementById('aw-id').value='';
-  document.getElementById('aw-reason').value='';
-  document.getElementById('aw-date').value=todayStr();
-  document.getElementById('aw-enddate').value='';
-  document.getElementById('aw-err').textContent='';
-  document.getElementById('aw-cancel-btn').classList.add('hidden');
-  document.getElementById('aw-multi-btn').classList.remove('on');
-  document.getElementById('aw-end-wrap').classList.add('hidden');
-  renderAwayDateChips();renderAwayEndChips();
-  renderPartPills('all');renderAwayRepeatPills('none');
-  updateAwayHint();
-}
-
-function renderPartPills(cur){
-  const c=document.getElementById('aw-part-pills');c.innerHTML='';
-  PART_OPTS.forEach(([label,val])=>{
-    const b=document.createElement('button');
-    b.className='part-pill'+(cur===val?' active':'');
-    b.textContent=label;
-    b.onclick=()=>{c.querySelectorAll('.part-pill').forEach(x=>x.classList.remove('active'));b.classList.add('active');c.dataset.selected=val;buzz(5);};
-    c.appendChild(b);
-  });
-  c.dataset.selected=cur;
-}
-
-function renderAwayRepeatPills(cur){
-  const c=document.getElementById('aw-repeat-pills');c.innerHTML='';
-  REPEAT_OPTS.forEach(([label,val])=>{
-    const b=document.createElement('button');
-    b.className='repeat-pill'+((cur||'none')===val?' active':'');
-    b.textContent=label;
-    b.onclick=()=>{c.querySelectorAll('.repeat-pill').forEach(x=>x.classList.remove('active'));b.classList.add('active');c.dataset.selected=val;buzz(5);updateAwayHint();};
-    c.appendChild(b);
-  });
-  c.dataset.selected=cur||'none';
-}
-
-function renderAwayDateChips(){
-  const c=document.getElementById('aw-date-chips');c.innerHTML='';
-  const now=new Date();
-  const cur=document.getElementById('aw-date').value;
-  const opts=[['Today',0],['Tomorrow',1]];
-  [5,6,0].forEach(dow=>{let diff=dow-now.getDay();if(diff<=0)diff+=7;opts.push([WDAYS[(dow+6)%7],diff]);});
-  opts.forEach(([label,off])=>{
-    const d=addDays(now,off);
-    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
-    const b=document.createElement('button');
-    b.className='date-chip'+(key===cur?' active':'');
-    b.textContent=label;
-    b.onclick=()=>{document.getElementById('aw-date').value=key;c.querySelectorAll('.date-chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');buzz(5);renderAwayEndChips();updateAwayHint();};
-    c.appendChild(b);
-  });
-}
-
-function renderAwayEndChips(){
-  const c=document.getElementById('aw-end-chips');if(!c)return;
+/* Your own upcoming events, offered for one-tap conversion to away */
+function renderConvertList(){
+  const c=document.getElementById('convert-list');
+  if(!c)return;
+  const today=todayStr();
+  const mine=Object.values(events)
+    .filter(e=>e.creator===me.name&&(e.endDate||e.date)>=today)
+    .sort((a,b)=>a.date>b.date?1:-1)
+    .slice(0,12);
+  if(!mine.length){c.innerHTML='<div class="day-empty" style="padding:16px;font-size:13px">No upcoming events of yours</div>';return;}
   c.innerHTML='';
-  const start=document.getElementById('aw-date').value;
-  if(!start)return;
-  const cur=document.getElementById('aw-enddate').value;
-  const base=parseDate(start);
-  [[1,'2 days'],[2,'3 days'],[4,'5 days'],[6,'1 week'],[13,'2 weeks']].forEach(([off,label])=>{
-    const d=addDays(base,off);
-    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
-    const b=document.createElement('button');
-    b.className='date-chip'+(key===cur?' active':'');
-    b.textContent=label;
-    b.onclick=()=>{document.getElementById('aw-enddate').value=key;c.querySelectorAll('.date-chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');buzz(5);updateAwayHint();};
-    c.appendChild(b);
+  mine.forEach(ev=>{
+    const row=document.createElement('div');row.className='away-item';
+    const d=parseDate(ev.date);
+    let when=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+    if(isMultiDay(ev)){
+      const e=parseDate(ev.endDate);
+      when+=' → '+e.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    }
+    row.innerHTML=`<div class="away-item-info"><div class="away-item-when">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="away-item-detail">${when}</div></div><button class="btn btn-sm btn-secondary" onclick="convertEventToAway('${ev.id}')">→ Away</button>`;
+    c.appendChild(row);
   });
 }
 
-function toggleAwayMulti(){
-  const btn=document.getElementById('aw-multi-btn');
-  const wrap=document.getElementById('aw-end-wrap');
-  const on=btn.classList.toggle('on');
-  wrap.classList.toggle('hidden',!on);
-  buzz(5);
-  if(on&&!document.getElementById('aw-enddate').value){
-    const s=document.getElementById('aw-date').value;
-    if(s){const d=addDays(parseDate(s),1);document.getElementById('aw-enddate').value=dk(d.getFullYear(),d.getMonth(),d.getDate());}
-    renderAwayEndChips();
-  }
-  updateAwayHint();
+async function convertEventToAway(id){
+  const ev=events[id];if(!ev)return;
+  if(ev.creator!==me.name){toast('Only the creator can convert this');return;}
+  const hasChat=chatMsgs[id]&&chatMsgs[id].length;
+  const rsvpCount=ev.rsvps?Object.keys(ev.rsvps).length:0;
+  let msg='Convert "'+ev.title+'" to an away block?';
+  if(rsvpCount||hasChat)msg+=' Its RSVPs and chat will be lost.';
+  const ok=await appConfirm(msg,{okText:'Convert'});
+  if(!ok)return;
+
+  await db.ref('away').push().set({
+    person:me.name,
+    date:ev.date,
+    endDate:ev.endDate||'',
+    part:'all',
+    repeat:ev.repeat||'none',
+    reason:ev.title,
+    created:Date.now(),updated:Date.now()
+  });
+  await db.ref('events/'+id).remove();
+  await db.ref('chat/'+id).remove();
+  buzz();toast('Converted to away');
+  renderConvertList();
 }
+
+
+
+
+
+
 
 function awayLabel(a){
   const s=parseDate(a.date);
@@ -2307,81 +2303,14 @@ function awayLabel(a){
   return txt;
 }
 
-function updateAwayHint(){
-  const h=document.getElementById('aw-hint');if(!h)return;
-  const start=document.getElementById('aw-date').value;
-  if(!start){h.textContent='';return;}
-  const multi=document.getElementById('aw-multi-btn').classList.contains('on');
-  const end=multi?document.getElementById('aw-enddate').value:'';
-  const part=document.getElementById('aw-part-pills').dataset.selected||'all';
-  const rep=document.getElementById('aw-repeat-pills').dataset.selected||'none';
-  let txt='';
-  if(end&&end>start){
-    const days=Math.round((parseDate(end)-parseDate(start))/86400000)+1;
-    txt=days+' days';
-  } else {
-    txt='1 day';
-  }
-  if(part!=='all')txt+=' · '+(part==='am'?'mornings only':'afternoons only');
-  if(rep!=='none')txt+=' · repeats '+rep;
-  h.textContent=txt;
-}
 
-async function saveAway(){
-  const id=document.getElementById('aw-id').value;
-  const date=document.getElementById('aw-date').value;
-  const err=document.getElementById('aw-err');
-  err.textContent='';
-  if(!date){err.textContent='Pick a date';return;}
 
-  const multi=document.getElementById('aw-multi-btn').classList.contains('on');
-  let endDate=multi?document.getElementById('aw-enddate').value:'';
-  if(endDate&&endDate<date){err.textContent='End date is before the start';return;}
-  if(endDate===date)endDate='';
-
-  const data={
-    person:me.name,
-    date,endDate,
-    part:document.getElementById('aw-part-pills').dataset.selected||'all',
-    repeat:document.getElementById('aw-repeat-pills').dataset.selected||'none',
-    reason:document.getElementById('aw-reason').value.trim(),
-    updated:Date.now()
-  };
-
-  if(id){
-    await db.ref('away/'+id).update(data);
-    toast('Updated');
-  } else {
-    data.created=Date.now();
-    await db.ref('away').push().set(data);
-    toast('Marked away');
-  }
-  buzz();
-  resetAwayForm();
-}
-
-function editAway(id){
-  const a=away[id];if(!a)return;
-  document.getElementById('aw-id').value=id;
-  document.getElementById('aw-reason').value=a.reason||'';
-  document.getElementById('aw-date').value=a.date;
-  document.getElementById('aw-enddate').value=a.endDate||'';
-  document.getElementById('aw-cancel-btn').classList.remove('hidden');
-  const multi=!!(a.endDate&&a.endDate>a.date);
-  document.getElementById('aw-multi-btn').classList.toggle('on',multi);
-  document.getElementById('aw-end-wrap').classList.toggle('hidden',!multi);
-  renderAwayDateChips();renderAwayEndChips();
-  renderPartPills(a.part||'all');renderAwayRepeatPills(a.repeat||'none');
-  updateAwayHint();
-  document.getElementById('panel-away').querySelector('.panel-scroll').scrollTop=0;
-}
 
 async function deleteAway(id){
   const ok=await appConfirm('Remove this away block?',{okText:'Remove',danger:true});
   if(!ok)return;
   await db.ref('away/'+id).remove();
   toast('Removed');
-  if(document.getElementById('aw-id').value===id)resetAwayForm();
 }
 
 function renderAwayList(){
@@ -2395,7 +2324,7 @@ function renderAwayList(){
     if(a.part&&a.part!=='all')bits.push(a.part==='am'?'Morning':'Afternoon');
     if(a.repeat&&a.repeat!=='none')bits.push('🔁 '+a.repeat);
     if(a.reason)bits.push(esc(a.reason));
-    row.innerHTML=`<div class="away-item-info"><div class="away-item-when">${awayLabel(a)}</div><div class="away-item-detail">${bits.join(' · ')||'All day'}</div></div><button class="btn btn-sm btn-secondary" onclick="editAway('${a.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteAway('${a.id}')">✕</button>`;
+    row.innerHTML=`<div class="away-item-info"><div class="away-item-when">${awayLabel(a)}</div><div class="away-item-detail">${bits.join(' · ')||'All day'}</div></div><button class="btn btn-sm btn-secondary" onclick="editAwayInPanel('${a.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteAway('${a.id}')">✕</button>`;
     c.appendChild(row);
   });
 }
@@ -2474,9 +2403,59 @@ async function saveGroup(){
 /* ==============================================================
    EVENT CRUD
    ============================================================== */
-function openNewEvent(type,forDate){
-  document.getElementById('panel-event-title').textContent='New Event';
+/* ==============================================================
+   NEW / EDIT ENTRY — Event, Plan or Away
+   ============================================================== */
+let evMode='event';
+
+const MODE_HINTS={
+  event:'Shows on the calendar. No RSVP.',
+  plan:'People can RSVP and chat about it.',
+  away:'Only shows in the Free tab so people know you\'re unavailable.'
+};
+
+function setEventMode(mode){
+  evMode=mode;
+  buzz(5);
+  document.querySelectorAll('#ev-mode-switch .mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  // If we're editing something and the mode no longer matches what it is,
+  // saving will convert it. Say so up front.
+  const hintEl=document.getElementById('ev-mode-hint');
+  const editingEventId=document.getElementById('ev-id').value;
+  const editingAwayId=document.getElementById('ev-away-id').value;
+  let converting=null;
+  if(editingEventId&&mode==='away')converting='Saving will convert this into an away block. Its chat and RSVPs will be removed.';
+  else if(editingAwayId&&mode!=='away')converting='Saving will turn this away block into a real '+(mode==='plan'?'plan':'event')+'.';
+  if(converting){
+    hintEl.textContent=converting;
+    hintEl.style.color='var(--warning)';
+  } else {
+    hintEl.textContent=MODE_HINTS[mode];
+    hintEl.style.color='';
+  }
+
+  const isAway=mode==='away';
+  // Away has no icon, time, location or group/privacy options
+  document.getElementById('ev-emoji-field').classList.toggle('hidden',isAway);
+  document.getElementById('ev-time-field').classList.toggle('hidden',isAway);
+  document.getElementById('ev-location-field').classList.toggle('hidden',isAway);
+  document.getElementById('ev-more-toggle').classList.toggle('hidden',isAway);
+  document.getElementById('ev-more-body').classList.toggle('hidden',isAway);
+  // Away gets part-of-day instead
+  document.getElementById('ev-part-field').classList.toggle('hidden',!isAway);
+
+  document.getElementById('ev-title-label').textContent=isAway?'Reason (optional)':'What';
+  document.getElementById('ev-title').placeholder=isAway?'Holiday, work, etc':(mode==='plan'?'What are we planning?':"What's happening?");
+  document.getElementById('ev-multiday-btn').querySelector('span:last-child').textContent=isAway?'Away for more than one day':'Runs over multiple days';
+  document.getElementById('panel-event-title').textContent=
+    document.getElementById('ev-id').value||document.getElementById('ev-away-id').value
+      ? (isAway?'Edit Away':'Edit Event')
+      : (isAway?'Mark Yourself Away':(mode==='plan'?'New Plan':'New Event'));
+}
+
+function openNewEvent(mode,forDate){
   document.getElementById('ev-id').value='';
+  document.getElementById('ev-away-id').value='';
   document.getElementById('ev-title').value='';
   const d=forDate||selDate;
   document.getElementById('ev-date').value=d;
@@ -2485,36 +2464,101 @@ function openNewEvent(type,forDate){
   document.getElementById('ev-location').value='';
   document.getElementById('ev-desc').value='';
   document.getElementById('ev-privacy').value='everyone';
-  document.getElementById('ev-type').value=type||'event';
   document.getElementById('ev-err').textContent='';
   document.getElementById('ev-delete-btn').classList.add('hidden');
   document.getElementById('ev-dup-btn').classList.add('hidden');
   document.getElementById('ev-more-toggle').classList.remove('open');
   document.getElementById('ev-more-body').classList.remove('open');
   setMultiDay(false);updateSpanHint();
-  renderEmojiRow('');renderDateChips(d);renderTimeChips('');renderRepeatPills('none');
-  renderGroupOpts();openPanel('panel-event');
+  renderEmojiRow('');renderDateChips(d);renderTimeChips('');renderRepeatPills('none');renderEvPartPills('all');
+  renderGroupOpts();
+  setEventMode(mode||'event');
+  openPanel('panel-event');
   setTimeout(()=>document.getElementById('ev-title').focus(),150);
 }
 
+function renderEvPartPills(cur){
+  const c=document.getElementById('ev-part-pills');c.innerHTML='';
+  PART_OPTS.forEach(([label,val])=>{
+    const b=document.createElement('button');
+    b.className='part-pill'+(cur===val?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{c.querySelectorAll('.part-pill').forEach(x=>x.classList.remove('active'));b.classList.add('active');c.dataset.selected=val;buzz(5);};
+    c.appendChild(b);
+  });
+  c.dataset.selected=cur||'all';
+}
+
 async function saveEvent(){
-  const id=document.getElementById('ev-id').value;
-  const title=document.getElementById('ev-title').value.trim();
+  const err=document.getElementById('ev-err');
+  err.textContent='';
   const date=document.getElementById('ev-date').value;
-  if(!title){document.getElementById('ev-err').textContent='Give it a title';return;}
-  if(!date){document.getElementById('ev-err').textContent='Pick a date';return;}
+  if(!date){err.textContent='Pick a date';return;}
 
   const multi=document.getElementById('ev-multiday-btn').classList.contains('on');
   let endDate=multi?document.getElementById('ev-enddate').value:'';
-  if(endDate&&endDate<date){document.getElementById('ev-err').textContent='End date is before the start date';return;}
+  if(endDate&&endDate<date){err.textContent='End date is before the start date';return;}
   if(endDate===date)endDate='';
+  const repeat=document.getElementById('ev-repeat-pills').dataset.selected||'none';
+
+  const existingEventId=document.getElementById('ev-id').value;
+  const existingAwayId=document.getElementById('ev-away-id').value;
+
+  /* ---------- AWAY ---------- */
+  if(evMode==='away'){
+    const data={
+      person:me.name,date,endDate,
+      part:document.getElementById('ev-part-pills').dataset.selected||'all',
+      repeat,
+      reason:document.getElementById('ev-title').value.trim(),
+      updated:Date.now()
+    };
+
+    if(existingAwayId){
+      await db.ref('away/'+existingAwayId).update(data);
+      toast('Updated');
+    } else if(existingEventId){
+      // Converting an existing event into an away block
+      const ev=events[existingEventId];
+      if(ev&&ev.creator!==me.name){err.textContent='You can only convert your own events';return;}
+      if(!data.reason&&ev)data.reason=ev.title;
+      data.created=Date.now();
+      await db.ref('away').push().set(data);
+      await db.ref('events/'+existingEventId).remove();
+      await db.ref('chat/'+existingEventId).remove();
+      toast('Converted to away');
+    } else {
+      data.created=Date.now();
+      await db.ref('away').push().set(data);
+      toast(endDate?'Marked away for those days':'Marked away');
+    }
+    buzz();
+    closePanel('panel-event');
+    return;
+  }
+
+  /* ---------- EVENT or PLAN ---------- */
+  const title=document.getElementById('ev-title').value.trim();
+  if(!title){err.textContent='Give it a title';return;}
 
   const emoji=document.getElementById('ev-emoji-row').dataset.selected||'';
-  const repeat=document.getElementById('ev-repeat-pills').dataset.selected||'none';
-  const data={title,date,endDate,time:document.getElementById('ev-time').value,location:document.getElementById('ev-location').value.trim(),desc:document.getElementById('ev-desc').value.trim(),groupId:document.getElementById('ev-group').value,privacy:document.getElementById('ev-privacy').value,type:document.getElementById('ev-type').value,emoji,repeat,creator:me.name,updated:Date.now()};
+  const data={title,date,endDate,time:document.getElementById('ev-time').value,location:document.getElementById('ev-location').value.trim(),desc:document.getElementById('ev-desc').value.trim(),groupId:document.getElementById('ev-group').value,privacy:document.getElementById('ev-privacy').value,type:evMode,emoji,repeat,creator:me.name,updated:Date.now()};
 
-  if(id){
-    await db.ref('events/'+id).update(data);
+  if(existingAwayId){
+    // Converting an away block into a real event
+    data.rsvps={};data.created=Date.now();
+    if(!data.emoji)data.emoji=guessEmoji(title);
+    await db.ref('events').push().set(data);
+    await db.ref('away/'+existingAwayId).remove();
+    toast('Converted to '+(evMode==='plan'?'plan':'event'));
+    buzz();
+    selDate=date;viewWeekStart=getWeekStart(parseDate(date));
+    closePanel('panel-event');
+    return;
+  }
+
+  if(existingEventId){
+    await db.ref('events/'+existingEventId).update(data);
     toast('Updated');
   } else {
     data.rsvps={};data.created=Date.now();
@@ -2556,6 +2600,17 @@ async function duplicateEvent(){
 }
 
 async function deleteEvent(){
+  // Away block?
+  const awayId=document.getElementById('ev-away-id').value;
+  if(awayId){
+    const ok=await appConfirm('Remove this away block?',{okText:'Remove',danger:true});
+    if(!ok)return;
+    await db.ref('away/'+awayId).remove();
+    toast('Removed');
+    closePanel('panel-event');
+    return;
+  }
+
   const id=document.getElementById('ev-id').value;
   if(!id)return;
   const ev=events[id];
@@ -2682,8 +2737,8 @@ async function setRsvp(eid,st){
 
 function editFromDetail(){
   const ev=events[detailId];if(!ev)return;closePanel('panel-detail');
-  document.getElementById('panel-event-title').textContent='Edit Event';
   document.getElementById('ev-id').value=ev.id;
+  document.getElementById('ev-away-id').value='';
   document.getElementById('ev-title').value=ev.title;
   document.getElementById('ev-date').value=ev.date;
   document.getElementById('ev-enddate').value=ev.endDate||'';
@@ -2691,16 +2746,36 @@ function editFromDetail(){
   document.getElementById('ev-location').value=ev.location||'';
   document.getElementById('ev-desc').value=ev.desc||'';
   document.getElementById('ev-privacy').value=ev.privacy||'everyone';
-  document.getElementById('ev-type').value=ev.type||'event';
   document.getElementById('ev-err').textContent='';
   document.getElementById('ev-delete-btn').classList.remove('hidden');
   document.getElementById('ev-dup-btn').classList.remove('hidden');
   document.getElementById('ev-more-toggle').classList.remove('open');
   document.getElementById('ev-more-body').classList.remove('open');
   setMultiDay(isMultiDay(ev));
-  renderEmojiRow(ev.emoji||'');renderDateChips(ev.date);renderEndDateChips();renderTimeChips(ev.time||'');renderRepeatPills(ev.repeat||'none');
+  renderEmojiRow(ev.emoji||'');renderDateChips(ev.date);renderEndDateChips();renderTimeChips(ev.time||'');renderRepeatPills(ev.repeat||'none');renderEvPartPills('all');
   updateSpanHint();
   renderGroupOpts();if(ev.groupId)document.getElementById('ev-group').value=ev.groupId;
+  setEventMode(ev.type==='plan'?'plan':'event');
+  openPanel('panel-event');
+}
+
+/* Open the shared panel in away mode for an existing away block */
+function editAwayInPanel(id){
+  const a=away[id];if(!a)return;
+  closePanel('panel-away');
+  document.getElementById('ev-id').value='';
+  document.getElementById('ev-away-id').value=id;
+  document.getElementById('ev-title').value=a.reason||'';
+  document.getElementById('ev-date').value=a.date;
+  document.getElementById('ev-enddate').value=a.endDate||'';
+  document.getElementById('ev-err').textContent='';
+  document.getElementById('ev-delete-btn').classList.remove('hidden');
+  document.getElementById('ev-dup-btn').classList.add('hidden');
+  setMultiDay(!!(a.endDate&&a.endDate>a.date));
+  renderDateChips(a.date);renderEndDateChips();renderRepeatPills(a.repeat||'none');renderEvPartPills(a.part||'all');
+  renderEmojiRow('');renderTimeChips('');
+  updateSpanHint();
+  setEventMode('away');
   openPanel('panel-event');
 }
 
@@ -3202,6 +3277,7 @@ function onQuickAddInput(){
   }
   if(p.time)chips+=`<span class="quick-parse-chip">🕐 ${p.time}</span>`;
   if(p.location)chips+=`<span class="quick-parse-chip">📍 ${esc(p.location)}</span>`;
+  if(p.isAway)chips=`<span class="quick-parse-chip" style="background:rgba(139,107,240,.15);color:var(--awayc)">🌴 Away</span>`+chips;
   if(chips)box.innerHTML=chips+'<span style="color:var(--text-faint)">Press Enter to add</span>';
   else box.innerHTML='<span style="color:var(--text-faint)">Press Enter to add on '+parseDate(selDate).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+'</span>';
 }
@@ -3210,11 +3286,33 @@ async function submitQuickAdd(){
   const txt=document.getElementById('quick-add').value.trim();
   if(!txt)return;
   const p=quickParsed||parseEventText(txt);
-  if(!p||!p.title){toast('Need a title');return;}
+  if(!p)return;
+
+  const startDate=p.date||selDate;
+
+  /* Away phrasing goes to the away collection, not the calendar */
+  if(p.isAway){
+    await db.ref('away').push().set({
+      person:me.name,
+      date:startDate,
+      endDate:p.endDate||'',
+      part:'all',
+      repeat:'none',
+      reason:(p.title||p.awayReason||'Away'),
+      created:Date.now(),updated:Date.now()
+    });
+    document.getElementById('quick-add').value='';
+    document.getElementById('quick-parse').innerHTML='';
+    quickParsed=null;buzz();
+    toast('Marked away');
+    return;
+  }
+
+  if(!p.title){toast('Need a title');return;}
 
   const data={
     title:p.title,
-    date:p.date||selDate,
+    date:startDate,
     endDate:p.endDate||'',
     time:p.time||'',
     location:p.location||'',
