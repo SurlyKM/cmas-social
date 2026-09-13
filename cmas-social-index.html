@@ -8,15 +8,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- Firebase SDK (compat for simple script-tag usage) -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-
 <style>
-/* ================================================================
+/* ============================================================
    THEME TOKENS
-   ================================================================ */
+   ============================================================ */
 :root {
   --bg: #0c0c10;
   --surface: #16161e;
@@ -33,23 +30,23 @@
   --danger: #f06b6b;
   --danger-dim: rgba(240,107,107,0.12);
   --success: #4ade80;
+  --success-dim: rgba(74,222,128,0.1);
   --warning: #fbbf24;
-  --radius: 10px;
-  --radius-lg: 16px;
+  --warning-dim: rgba(251,191,36,0.1);
+  --radius: 12px;
+  --radius-lg: 18px;
   --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --safe-b: env(safe-area-inset-bottom, 0px);
 }
 :root[data-theme="light"] {
-  --bg: #f4f4f8;
-  --surface: #ffffff;
-  --surface-2: #eeeef3;
-  --surface-3: #e4e4ec;
-  --border: #d4d4de;
-  --text: #1a1a2e;
-  --text-dim: #6b6b82;
-  --text-faint: #9b9bb0;
+  --bg: #f4f4f8; --surface: #ffffff; --surface-2: #eeeef3;
+  --surface-3: #e4e4ec; --border: #d4d4de; --text: #1a1a2e;
+  --text-dim: #6b6b82; --text-faint: #9b9bb0;
   --primary-dim: rgba(124,107,240,0.1);
   --accent-dim: rgba(34,211,197,0.08);
   --danger-dim: rgba(240,107,107,0.08);
+  --success-dim: rgba(74,222,128,0.08);
+  --warning-dim: rgba(251,191,36,0.08);
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
@@ -59,272 +56,317 @@
     --primary-dim: rgba(124,107,240,0.1);
     --accent-dim: rgba(34,211,197,0.08);
     --danger-dim: rgba(240,107,107,0.08);
+    --success-dim: rgba(74,222,128,0.08);
+    --warning-dim: rgba(251,191,36,0.08);
   }
 }
 
-/* ================================================================
+/* ============================================================
    RESET & BASE
-   ================================================================ */
+   ============================================================ */
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
-::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+input,select,textarea,button{font-family:var(--font)}
 
-/* ================================================================
-   LAYOUT SHELL
-   ================================================================ */
+/* ============================================================
+   APP SHELL
+   ============================================================ */
 .app{display:flex;flex-direction:column;height:100%}
-.app-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;z-index:10}
-.app-title{font-size:18px;font-weight:700;letter-spacing:-0.02em}
+.app-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;z-index:10}
+.app-title{font-size:17px;font-weight:700;letter-spacing:-0.02em}
 .app-title span{color:var(--primary)}
-.header-actions{display:flex;gap:8px;align-items:center}
-.app-content{flex:1;overflow-y:auto;overflow-x:hidden}
-.tab-bar{display:flex;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
-.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:none;background:none;color:var(--text-dim);font:500 10px var(--font);cursor:pointer;transition:color .15s}
+.app-content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
+/* Tab bar */
+.tab-bar{display:flex;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;padding-bottom:var(--safe-b)}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 6px;border:none;background:none;color:var(--text-faint);font:500 10px var(--font);cursor:pointer;transition:color .15s;-webkit-tap-highlight-color:transparent}
 .tab-btn svg{width:22px;height:22px}
 .tab-btn.active{color:var(--primary)}
-.tab-btn:hover{color:var(--text)}
 
-/* ================================================================
+/* ============================================================
    SCREENS
-   ================================================================ */
+   ============================================================ */
 .screen{display:none;height:100%}
 .screen.active{display:flex;flex-direction:column}
 
-/* ================================================================
-   GATE / SETUP SCREENS
-   ================================================================ */
-.gate{display:flex;align-items:center;justify-content:center;height:100%;padding:24px}
-.gate-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;width:100%;max-width:380px;text-align:center}
-.gate-logo{font-size:28px;font-weight:700;margin-bottom:4px}
+/* ============================================================
+   GATE SCREENS
+   ============================================================ */
+.gate{display:flex;align-items:center;justify-content:center;height:100%;padding:20px}
+.gate-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 24px;width:100%;max-width:380px}
+.gate-logo{font-size:26px;font-weight:700;text-align:center;margin-bottom:2px}
 .gate-logo span{color:var(--primary)}
-.gate-sub{color:var(--text-dim);font-size:14px;margin-bottom:24px}
-.gate-card input{width:100%;padding:12px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font:400 15px var(--font);outline:none;margin-bottom:12px;transition:border-color .15s}
+.gate-sub{color:var(--text-dim);font-size:14px;text-align:center;margin-bottom:20px;line-height:1.4}
+.gate-card input{width:100%;padding:14px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:16px;outline:none;margin-bottom:10px;transition:border-color .15s;-webkit-appearance:none}
 .gate-card input:focus{border-color:var(--primary)}
 .gate-card input::placeholder{color:var(--text-faint)}
-.gate-err{color:var(--danger);font-size:13px;min-height:20px;margin-bottom:8px}
-.setup-card{max-width:420px}
-.color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:16px 0}
-.color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:border-color .15s,transform .15s}
-.color-swatch:hover{transform:scale(1.1)}
+.gate-err{color:var(--danger);font-size:13px;min-height:18px;margin-bottom:6px;text-align:center}
+.gate-links{display:flex;justify-content:center;gap:16px;margin-top:16px}
+.gate-link{color:var(--primary);font-size:13px;font-weight:500;cursor:pointer;background:none;border:none;text-decoration:underline;text-underline-offset:2px}
+.color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}
+.color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:border-color .15s,transform .15s;-webkit-tap-highlight-color:transparent}
 .color-swatch.selected{border-color:var(--text);transform:scale(1.15)}
 
-/* ================================================================
+/* Recovery code display */
+.recovery-box{background:var(--surface-2);border:2px dashed var(--primary);border-radius:var(--radius);padding:16px;text-align:center;margin:16px 0}
+.recovery-code{font-size:28px;font-weight:700;font-family:'Courier New',monospace;letter-spacing:.12em;color:var(--primary);margin:4px 0}
+.recovery-hint{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.4}
+
+/* ============================================================
    BUTTONS
-   ================================================================ */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border:none;border-radius:var(--radius);font:600 14px var(--font);cursor:pointer;transition:all .15s}
+   ============================================================ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border:none;border-radius:var(--radius);font:600 15px var(--font);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .btn-primary{background:var(--primary);color:#fff}
 .btn-primary:hover{filter:brightness(1.1)}
 .btn-secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
-.btn-secondary:hover{background:var(--surface-3)}
-.btn-sm{padding:6px 12px;font-size:13px}
+.btn-sm{padding:8px 14px;font-size:13px}
 .btn-danger{background:var(--danger-dim);color:var(--danger)}
 .btn-full{width:100%}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-icon{width:34px;height:34px;padding:0;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.btn-icon{width:38px;height:38px;padding:0;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent;flex-shrink:0}
 .btn-icon:hover{color:var(--text);background:var(--surface-3)}
 .btn-icon svg{width:18px;height:18px}
 
-/* ================================================================
-   CALENDAR
-   ================================================================ */
-.cal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px}
-.cal-month{font-size:17px;font-weight:600}
-.cal-nav{display:flex;gap:4px}
-.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;margin-bottom:4px}
-.cal-weekday{text-align:center;font-size:11px;font-weight:600;color:var(--text-faint);padding:4px;text-transform:uppercase;letter-spacing:.05em}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:2px;flex:1}
-.cal-day{min-height:52px;padding:4px;border-radius:6px;cursor:pointer;position:relative;transition:background .1s}
-.cal-day:hover{background:var(--surface-2)}
-.cal-day.today{background:var(--primary-dim)}
-.cal-day.other-month{opacity:.3}
-.cal-day-num{font-size:12px;font-weight:600;margin-bottom:2px}
-.cal-day-dots{display:flex;gap:3px;flex-wrap:wrap}
-.cal-dot{width:6px;height:6px;border-radius:50%}
+/* FAB */
+.fab{position:fixed;bottom:calc(68px + var(--safe-b));right:16px;width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:28px;line-height:1;cursor:pointer;box-shadow:0 4px 16px rgba(124,107,240,.4);z-index:9;display:flex;align-items:center;justify-content:center;transition:transform .15s;-webkit-tap-highlight-color:transparent}
+.fab:active{transform:scale(.92)}
 
-/* ================================================================
-   AVAILABILITY
-   ================================================================ */
-.avail-legend{display:flex;gap:12px;padding:12px 16px;flex-wrap:wrap}
-.avail-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim)}
-.avail-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* ============================================================
+   WEEK VIEW CALENDAR
+   ============================================================ */
+.week-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:8px}
+.week-label{font-size:16px;font-weight:600}
+.week-nav{display:flex;gap:4px;align-items:center}
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;padding:0 12px;margin-bottom:4px}
+.week-day-col{display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;cursor:pointer;transition:background .1s;-webkit-tap-highlight-color:transparent}
+.week-day-col.today{background:var(--primary-dim)}
+.week-day-col.selected{background:var(--primary);color:#fff}
+.week-day-col.selected .week-day-name{color:#fff}
+.week-day-name{font-size:10px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em}
+.week-day-num{font-size:15px;font-weight:700;margin-top:2px}
+.week-day-dot{width:5px;height:5px;border-radius:50%;background:var(--primary);margin-top:3px;opacity:0}
+.week-day-dot.has-events{opacity:1}
+.week-day-col.selected .week-day-dot{background:#fff}
+
+/* Day event list */
+.day-header{padding:8px 16px;font-size:13px;font-weight:600;color:var(--text-dim)}
+.day-events{flex:1;overflow-y:auto;padding:0 12px 80px}
+.day-empty{padding:40px 24px;text-align:center;color:var(--text-faint);font-size:14px}
+
+/* Event card (mobile) */
+.ev-card{display:flex;gap:10px;padding:12px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:background .1s;-webkit-tap-highlight-color:transparent}
+.ev-card:active{background:var(--surface-2)}
+.ev-bar{width:4px;border-radius:2px;flex-shrink:0}
+.ev-body{flex:1;min-width:0}
+.ev-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-meta{font-size:12px;color:var(--text-dim);margin-top:1px}
+.ev-badges{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.ev-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+
+/* ============================================================
+   MONTH VIEW (secondary)
+   ============================================================ */
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:2px}
+.month-weekdays{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;margin-bottom:2px}
+.month-weekday{text-align:center;font-size:10px;font-weight:600;color:var(--text-faint);padding:4px;text-transform:uppercase}
+.month-cell{min-height:44px;padding:3px;border-radius:8px;cursor:pointer;transition:background .1s;text-align:center;-webkit-tap-highlight-color:transparent}
+.month-cell:active{background:var(--surface-2)}
+.month-cell.today{background:var(--primary-dim)}
+.month-cell.selected{background:var(--primary);color:#fff}
+.month-cell.other{opacity:.25}
+.month-cell-num{font-size:12px;font-weight:600}
+.month-cell-dots{display:flex;justify-content:center;gap:2px;margin-top:2px}
+.month-dot{width:5px;height:5px;border-radius:50%}
+
+/* View toggle */
+.view-toggle{display:flex;background:var(--surface-2);border-radius:8px;padding:2px;gap:2px}
+.view-toggle-btn{padding:5px 10px;border:none;background:none;border-radius:6px;font:500 11px var(--font);color:var(--text-dim);cursor:pointer;transition:all .15s}
+.view-toggle-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+
+/* ============================================================
+   AVAILABILITY VIEW
+   ============================================================ */
+.avail-legend{display:flex;gap:8px;padding:8px 16px;flex-wrap:wrap;overflow-x:auto}
+.avail-chip{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim);white-space:nowrap}
+.avail-chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .avail-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 8px;gap:2px}
-.avail-cell{min-height:60px;padding:4px;border-radius:6px;cursor:pointer}
-.avail-cell.other-month{opacity:.25}
-.avail-cell-num{font-size:11px;font-weight:600;margin-bottom:2px}
-.avail-people{display:flex;flex-wrap:wrap;gap:2px}
-.avail-pip{width:8px;height:8px;border-radius:50%;border:1px solid var(--bg)}
+.avail-cell{min-height:54px;padding:3px;border-radius:8px;cursor:pointer;text-align:center}
+.avail-cell.other{opacity:.2}
+.avail-cell-num{font-size:10px;font-weight:600;margin-bottom:1px}
+.avail-pips{display:flex;flex-wrap:wrap;justify-content:center;gap:2px}
+.avail-pip{width:7px;height:7px;border-radius:50%;border:1px solid var(--bg)}
 
-/* ================================================================
+/* ============================================================
    PANELS (bottom sheets)
-   ================================================================ */
+   ============================================================ */
 .panel{position:fixed;inset:0;z-index:100;display:none}
 .panel.open{display:flex}
-.panel-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6)}
-.panel-body{position:absolute;bottom:0;left:0;right:0;max-height:85vh;background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;flex-direction:column;overflow:hidden;animation:slideUp .25s ease-out}
+.panel-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.panel-body{position:absolute;bottom:0;left:0;right:0;max-height:90vh;background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;flex-direction:column;overflow:hidden;animation:slideUp .2s ease-out}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.panel-handle{width:32px;height:4px;background:var(--border);border-radius:2px;margin:8px auto}
-.panel-header{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 12px;border-bottom:1px solid var(--border)}
+.panel-handle{width:32px;height:4px;background:var(--border);border-radius:2px;margin:8px auto 4px}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;border-bottom:1px solid var(--border)}
 .panel-title{font-size:17px;font-weight:600}
-.panel-scroll{overflow-y:auto;padding:16px;flex:1}
+.panel-scroll{overflow-y:auto;padding:16px;flex:1;-webkit-overflow-scrolling:touch}
 
-/* ================================================================
-   FORM ELEMENTS
-   ================================================================ */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:13px;font-weight:500;color:var(--text-dim);margin-bottom:5px}
-.field input,.field select,.field textarea{width:100%;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font:400 14px var(--font);outline:none}
+/* ============================================================
+   FORMS
+   ============================================================ */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+.field input,.field select,.field textarea{width:100%;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:16px;outline:none;-webkit-appearance:none}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary)}
 .field textarea{resize:vertical;min-height:60px}
-.field select{cursor:pointer}
 
-/* ================================================================
-   EVENT CARDS
-   ================================================================ */
-.event-list{padding:16px;display:flex;flex-direction:column;gap:8px}
-.event-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:background .1s;display:flex;gap:12px;align-items:flex-start}
-.event-card:hover{background:var(--surface-3)}
-.event-color{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0}
-.event-info{flex:1;min-width:0}
-.event-title{font-size:14px;font-weight:600}
-.event-meta{font-size:12px;color:var(--text-dim);margin-top:2px}
-.event-rsvp-row{display:flex;gap:4px;margin-top:6px}
-.event-rsvp-badge{font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500}
-
-/* ================================================================
-   CHAT
-   ================================================================ */
-.chat-area{flex:1;overflow-y:auto;padding:12px 16px}
-.chat-msg{margin-bottom:10px}
-.chat-msg-header{display:flex;align-items:baseline;gap:6px}
-.chat-msg-name{font-size:13px;font-weight:600}
-.chat-msg-time{font-size:11px;color:var(--text-faint)}
-.chat-msg-text{font-size:14px;color:var(--text);margin-top:2px;word-break:break-word}
-.chat-input-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--surface)}
-.chat-input-row input{flex:1}
-
-/* ================================================================
-   GROUP CARDS
-   ================================================================ */
-.group-list{padding:16px;display:flex;flex-direction:column;gap:8px}
-.group-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:background .1s}
-.group-card:hover{background:var(--surface-3)}
-.group-card-name{font-size:15px;font-weight:600}
-.group-card-meta{font-size:12px;color:var(--text-dim);margin-top:2px}
-.group-members{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
-.member-chip{font-size:11px;padding:3px 10px;border-radius:12px;font-weight:500;color:#fff}
-
-/* ================================================================
+/* ============================================================
    RSVP
-   ================================================================ */
-.rsvp-row{display:flex;gap:6px;margin-top:12px}
-.rsvp-btn{flex:1;padding:8px;border:2px solid var(--border);border-radius:var(--radius);background:none;color:var(--text-dim);font:600 13px var(--font);cursor:pointer;transition:all .15s;text-align:center}
-.rsvp-btn:hover{border-color:var(--text-faint);color:var(--text)}
-.rsvp-btn.rsvp-going{border-color:var(--success);color:var(--success);background:rgba(74,222,128,.08)}
-.rsvp-btn.rsvp-maybe{border-color:var(--warning);color:var(--warning);background:rgba(251,191,36,.08)}
-.rsvp-btn.rsvp-not{border-color:var(--danger);color:var(--danger);background:rgba(240,107,107,.08)}
+   ============================================================ */
+.rsvp-row{display:flex;gap:6px;margin:12px 0}
+.rsvp-btn{flex:1;padding:10px;border:2px solid var(--border);border-radius:var(--radius);background:none;color:var(--text-dim);font:600 14px var(--font);cursor:pointer;transition:all .15s;text-align:center;-webkit-tap-highlight-color:transparent}
+.rsvp-btn.rsvp-going{border-color:var(--success);color:var(--success);background:var(--success-dim)}
+.rsvp-btn.rsvp-maybe{border-color:var(--warning);color:var(--warning);background:var(--warning-dim)}
+.rsvp-btn.rsvp-not{border-color:var(--danger);color:var(--danger);background:var(--danger-dim)}
 
-/* ================================================================
+/* ============================================================
+   CHAT
+   ============================================================ */
+.chat-area{flex:1;overflow-y:auto;padding:10px 16px;-webkit-overflow-scrolling:touch}
+.chat-msg{margin-bottom:10px}
+.chat-msg-head{display:flex;align-items:baseline;gap:6px}
+.chat-msg-name{font-size:12px;font-weight:700}
+.chat-msg-time{font-size:10px;color:var(--text-faint)}
+.chat-msg-text{font-size:14px;margin-top:2px;word-break:break-word}
+.chat-input-row{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:var(--surface)}
+.chat-input-row input{flex:1;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:15px;outline:none}
+
+/* ============================================================
+   GROUPS
+   ============================================================ */
+.group-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.group-card:active{background:var(--surface-2)}
+.group-name{font-size:15px;font-weight:600}
+.group-meta{font-size:12px;color:var(--text-dim);margin-top:2px}
+.group-members{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.member-chip{font-size:10px;padding:3px 8px;border-radius:10px;font-weight:600;color:#fff}
+
+/* ============================================================
    ONLINE BAR
-   ================================================================ */
-.online-bar{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--border);align-items:center;font-size:12px;color:var(--text-dim);flex-wrap:wrap}
-.online-dot{width:8px;height:8px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+   ============================================================ */
+.online-bar{display:none;gap:6px;padding:6px 16px;border-bottom:1px solid var(--border);align-items:center;font-size:11px;color:var(--text-dim);flex-wrap:wrap}
+.online-bar.show{display:flex}
+.online-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulse 2s infinite;flex-shrink:0}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.online-name{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;color:#fff}
+.online-tag{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;color:#fff}
 
-/* ================================================================
-   PRIVACY CHIPS
-   ================================================================ */
-.privacy-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
-.privacy-everyone{background:var(--accent-dim);color:var(--accent)}
-.privacy-close{background:var(--primary-dim);color:var(--primary)}
-.privacy-me{background:var(--surface-3);color:var(--text-dim)}
+/* ============================================================
+   CHECKBOX ROWS
+   ============================================================ */
+.check-list{display:flex;flex-direction:column;gap:4px}
+.check-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border)}
+.check-row-name{font-size:14px;display:flex;align-items:center;gap:8px}
+.check-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;transition:all .15s;-webkit-tap-highlight-color:transparent;flex-shrink:0}
+.check-box.checked{background:var(--primary);border-color:var(--primary);color:#fff}
+.check-box svg{width:14px;height:14px}
 
-/* ================================================================
+/* ============================================================
    SETTINGS
-   ================================================================ */
+   ============================================================ */
 .settings-section{margin-bottom:20px}
-.settings-label{font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
-.settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
-.settings-row-label{font-size:14px}
-.toggle{width:44px;height:24px;border-radius:12px;border:none;background:var(--border);cursor:pointer;position:relative;transition:background .2s}
+.settings-heading{font-size:11px;font-weight:700;color:var(--text-faint);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.toggle{width:46px;height:26px;border-radius:13px;border:none;background:var(--border);cursor:pointer;position:relative;transition:background .2s;-webkit-tap-highlight-color:transparent}
 .toggle.on{background:var(--primary)}
-.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
 .toggle.on::after{transform:translateX(20px)}
 
-/* ================================================================
-   CLOSE FRIENDS / CHECKBOXES
-   ================================================================ */
-.cf-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.cf-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border)}
-.cf-row-name{font-size:14px;display:flex;align-items:center;gap:8px}
-.cf-check{width:20px;height:20px;border-radius:4px;border:2px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;transition:all .15s}
-.cf-check.checked{background:var(--primary);border-color:var(--primary);color:#fff}
-
-/* ================================================================
-   EMPTY & LOADING STATES
-   ================================================================ */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;color:var(--text-dim);text-align:center;flex:1}
-.empty-state p{font-size:14px;max-width:260px}
-.loading{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:14px}
+/* ============================================================
+   LOADING & UTILITY
+   ============================================================ */
+.loading{display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:14px;padding:24px;text-align:center}
 .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin-right:10px}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* ================================================================
-   UTILITY
-   ================================================================ */
 .hidden{display:none!important}
-.mt-16{margin-top:16px}
-.mb-8{margin-bottom:8px}
-.text-sm{font-size:13px}
-.text-dim{color:var(--text-dim)}
 </style>
 </head>
 <body>
 
 <div id="loading" class="loading"><div class="spinner"></div>Loading CMAS Social...</div>
 
-<!-- ============================================================
-     GATE: Access code
-     ============================================================ -->
-<div id="gate" class="gate hidden">
+<!-- GATE: Welcome -->
+<div id="gate-welcome" class="gate hidden">
+  <div class="gate-card">
+    <div class="gate-logo">CMAS <span>Social</span></div>
+    <div class="gate-sub">Shared calendar for the crew</div>
+    <button class="btn btn-primary btn-full" onclick="showGateJoin()" style="margin-bottom:10px">Join with access code</button>
+    <button class="btn btn-secondary btn-full" onclick="showGateSignin()">Sign in on new device</button>
+  </div>
+</div>
+
+<!-- GATE: Enter access code (new user) -->
+<div id="gate-join" class="gate hidden">
   <div class="gate-card">
     <div class="gate-logo">CMAS <span>Social</span></div>
     <div class="gate-sub">Enter the group access code</div>
-    <input id="gate-code" type="password" placeholder="Access code" autocomplete="off">
-    <div id="gate-err" class="gate-err"></div>
-    <button class="btn btn-primary btn-full" onclick="submitGate()">Enter</button>
+    <input id="join-code" type="password" placeholder="Access code" autocomplete="off">
+    <div id="join-err" class="gate-err"></div>
+    <button class="btn btn-primary btn-full" onclick="submitJoinCode()">Next</button>
+    <div class="gate-links"><button class="gate-link" onclick="showGateWelcome()">Back</button></div>
   </div>
 </div>
 
-<!-- ============================================================
-     SETUP: Pick name + colour
-     ============================================================ -->
-<div id="setup" class="gate hidden">
-  <div class="gate-card setup-card">
+<!-- GATE: Pick name + colour (new user) -->
+<div id="gate-profile" class="gate hidden">
+  <div class="gate-card">
     <div class="gate-logo">CMAS <span>Social</span></div>
     <div class="gate-sub">Pick your name and colour</div>
-    <input id="setup-name" type="text" placeholder="Your display name" maxlength="20" autocomplete="off">
-    <div class="color-grid" id="color-grid"></div>
-    <div id="setup-err" class="gate-err"></div>
-    <button class="btn btn-primary btn-full" onclick="submitSetup()">Join</button>
+    <input id="profile-name" type="text" placeholder="Display name" maxlength="20" autocomplete="off">
+    <div class="color-grid" id="profile-colors"></div>
+    <div id="profile-err" class="gate-err"></div>
+    <button class="btn btn-primary btn-full" onclick="submitProfile()">Create Account</button>
+    <div class="gate-links"><button class="gate-link" onclick="showGateJoin()">Back</button></div>
   </div>
 </div>
 
-<!-- ============================================================
-     FIRST-TIME SETUP: Creator sets access code
-     ============================================================ -->
-<div id="first-setup" class="gate hidden">
-  <div class="gate-card setup-card">
+<!-- GATE: Show recovery code -->
+<div id="gate-recovery" class="gate hidden">
+  <div class="gate-card">
+    <div class="gate-logo">CMAS <span>Social</span></div>
+    <div class="gate-sub">Your personal recovery code</div>
+    <div class="recovery-box">
+      <div class="recovery-code" id="recovery-display"></div>
+      <div class="recovery-hint">Save this somewhere safe. You'll need it to sign in on another device. It's only shown once.</div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="confirmRecovery()">I've saved it, let's go</button>
+  </div>
+</div>
+
+<!-- GATE: Sign in (existing user, new device) -->
+<div id="gate-signin" class="gate hidden">
+  <div class="gate-card">
+    <div class="gate-logo">CMAS <span>Social</span></div>
+    <div class="gate-sub">Sign in with your name and recovery code</div>
+    <input id="signin-name" type="text" placeholder="Your display name" autocomplete="off">
+    <input id="signin-code" type="text" placeholder="Recovery code (e.g. KFXM-7293)" autocomplete="off" style="font-family:monospace;letter-spacing:.05em;text-transform:uppercase">
+    <div id="signin-err" class="gate-err"></div>
+    <button class="btn btn-primary btn-full" onclick="submitSignin()">Sign In</button>
+    <div class="gate-links"><button class="gate-link" onclick="showGateWelcome()">Back</button></div>
+  </div>
+</div>
+
+<!-- GATE: First-time setup (creator) -->
+<div id="gate-first" class="gate hidden">
+  <div class="gate-card">
     <div class="gate-logo">CMAS <span>Social</span></div>
     <div class="gate-sub">You're the first one here. Set an access code your group will share.</div>
-    <input id="first-code" type="text" placeholder="Set access code" autocomplete="off">
+    <input id="first-code" type="text" placeholder="Group access code" autocomplete="off">
     <input id="first-name" type="text" placeholder="Your display name" maxlength="20" autocomplete="off">
-    <div class="color-grid" id="first-color-grid"></div>
+    <div class="color-grid" id="first-colors"></div>
     <div id="first-err" class="gate-err"></div>
-    <button class="btn btn-primary btn-full" onclick="submitFirstSetup()">Create</button>
+    <button class="btn btn-primary btn-full" onclick="submitFirst()">Create Group</button>
   </div>
 </div>
 
@@ -334,67 +376,90 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 <div id="app" class="app hidden">
   <header class="app-header">
     <div class="app-title">CMAS <span>Social</span></div>
-    <div class="header-actions">
-      <button class="btn-icon" onclick="openSettings()" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div class="view-toggle" id="cal-view-toggle">
+        <button class="view-toggle-btn active" data-view="week" onclick="setCalView('week')">Week</button>
+        <button class="view-toggle-btn" data-view="month" onclick="setCalView('month')">Month</button>
+      </div>
+      <button class="btn-icon" onclick="openSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
 
-  <div id="online-bar" class="online-bar hidden">
+  <div id="online-bar" class="online-bar">
     <div class="online-dot"></div>
-    <span>Online now:</span>
-    <div id="online-names" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+    <span>Online:</span>
+    <div id="online-names" style="display:flex;gap:3px;flex-wrap:wrap"></div>
   </div>
 
   <div class="app-content" id="app-content">
-    <!-- Calendar Screen -->
+    <!-- Calendar (Week + Month) -->
     <div id="screen-calendar" class="screen active">
-      <div class="cal-header">
-        <button class="btn-icon" onclick="calPrev()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
-        <div class="cal-month" id="cal-month-label"></div>
-        <div class="cal-nav">
-          <button class="btn btn-sm btn-secondary" onclick="calToday()">Today</button>
-          <button class="btn-icon" onclick="calNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      <!-- Week view -->
+      <div id="week-view">
+        <div class="week-header">
+          <button class="btn-icon" onclick="weekPrev()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="week-label" id="week-label"></div>
+          <div class="week-nav">
+            <button class="btn btn-sm btn-secondary" onclick="weekToday()">Today</button>
+            <button class="btn-icon" onclick="weekNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+          </div>
         </div>
+        <div class="week-strip" id="week-strip"></div>
+        <div class="day-header" id="selected-day-label"></div>
+        <div class="day-events" id="day-events"></div>
       </div>
-      <div class="cal-weekdays" id="cal-weekdays"></div>
-      <div class="cal-grid" id="cal-grid"></div>
+      <!-- Month view -->
+      <div id="month-view" class="hidden">
+        <div class="week-header">
+          <button class="btn-icon" onclick="monthPrev()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="week-label" id="month-label"></div>
+          <div class="week-nav">
+            <button class="btn btn-sm btn-secondary" onclick="monthToday()">Today</button>
+            <button class="btn-icon" onclick="monthNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+          </div>
+        </div>
+        <div class="month-weekdays" id="month-weekdays"></div>
+        <div class="month-grid" id="month-grid"></div>
+        <div class="day-header" id="month-day-label"></div>
+        <div class="day-events" id="month-day-events" style="max-height:30vh"></div>
+      </div>
     </div>
 
-    <!-- Availability Screen -->
+    <!-- Availability -->
     <div id="screen-avail" class="screen">
-      <div class="cal-header">
-        <button class="btn-icon" onclick="calPrev()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
-        <div class="cal-month" id="avail-month-label"></div>
-        <div class="cal-nav">
-          <button class="btn btn-sm btn-secondary" onclick="calToday()">Today</button>
-          <button class="btn-icon" onclick="calNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+      <div class="week-header">
+        <button class="btn-icon" onclick="availPrev()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="week-label" id="avail-label"></div>
+        <div class="week-nav">
+          <button class="btn btn-sm btn-secondary" onclick="availToday()">Today</button>
+          <button class="btn-icon" onclick="availNext()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
         </div>
       </div>
       <div id="avail-legend" class="avail-legend"></div>
-      <div class="cal-weekdays" id="avail-weekdays"></div>
+      <div class="month-weekdays" id="avail-weekdays"></div>
       <div class="avail-grid" id="avail-grid"></div>
     </div>
 
-    <!-- Plans Screen -->
+    <!-- Plans -->
     <div id="screen-plans" class="screen">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;">
-        <div style="font-size:17px;font-weight:600;">Plans</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+        <div style="font-size:17px;font-weight:600">Plans</div>
         <button class="btn btn-sm btn-primary" onclick="openNewEvent('plan')">+ New Plan</button>
       </div>
-      <div id="plans-list" class="event-list" style="flex:1;overflow-y:auto;"></div>
+      <div id="plans-list" style="flex:1;overflow-y:auto;padding:0 12px 80px"></div>
     </div>
 
-    <!-- Groups Screen -->
+    <!-- Groups -->
     <div id="screen-groups" class="screen">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;">
-        <div style="font-size:17px;font-weight:600;">Groups</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px">
+        <div style="font-size:17px;font-weight:600">Groups</div>
         <button class="btn btn-sm btn-primary" onclick="openNewGroup()">+ New Group</button>
       </div>
-      <div id="groups-list" class="group-list" style="flex:1;overflow-y:auto;"></div>
+      <div id="groups-list" style="flex:1;overflow-y:auto;padding:0 12px 80px"></div>
     </div>
   </div>
+
+  <button class="fab" id="fab" onclick="openNewEvent()">+</button>
 
   <nav class="tab-bar">
     <button class="tab-btn active" data-tab="calendar" onclick="switchTab('calendar')">
@@ -417,7 +482,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 </div>
 
 <!-- ============================================================
-     PANEL: New / Edit Event
+     PANEL: New/Edit Event
      ============================================================ -->
 <div id="panel-event" class="panel">
   <div class="panel-backdrop" onclick="closePanel('panel-event')"></div>
@@ -430,32 +495,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
     <div class="panel-scroll">
       <input type="hidden" id="ev-id">
       <div class="field"><label>Title</label><input id="ev-title" placeholder="What's happening?"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="field"><label>Date</label><input id="ev-date" type="date"></div>
         <div class="field"><label>Time</label><input id="ev-time" type="time"></div>
       </div>
       <div class="field"><label>Location</label><input id="ev-location" placeholder="Where?"></div>
       <div class="field"><label>Description</label><textarea id="ev-desc" rows="2" placeholder="Details..."></textarea></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="field"><label>Group</label><select id="ev-group"></select></div>
-        <div class="field">
-          <label>Privacy</label>
-          <select id="ev-privacy">
-            <option value="everyone">Everyone</option>
-            <option value="close">Close Friends</option>
-            <option value="me">Just Me</option>
-          </select>
-        </div>
+        <div class="field"><label>Privacy</label><select id="ev-privacy"><option value="everyone">Everyone</option><option value="close">Close Friends</option><option value="me">Just Me</option></select></div>
       </div>
-      <div class="field">
-        <label>Type</label>
-        <select id="ev-type">
-          <option value="event">Event (no RSVP)</option>
-          <option value="plan">Plan (with RSVP)</option>
-        </select>
-      </div>
+      <div class="field"><label>Type</label><select id="ev-type"><option value="event">Event (no RSVP)</option><option value="plan">Plan (with RSVP)</option></select></div>
       <div id="ev-err" class="gate-err"></div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px">
         <button class="btn btn-primary btn-full" onclick="saveEvent()">Save</button>
         <button id="ev-delete-btn" class="btn btn-danger btn-sm hidden" onclick="deleteEvent()">Delete</button>
       </div>
@@ -464,32 +516,32 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 </div>
 
 <!-- ============================================================
-     PANEL: Event Detail (RSVP + Chat)
+     PANEL: Event Detail
      ============================================================ -->
 <div id="panel-detail" class="panel">
   <div class="panel-backdrop" onclick="closePanel('panel-detail')"></div>
-  <div class="panel-body" style="height:85vh;">
+  <div class="panel-body" style="height:88vh">
     <div class="panel-handle"></div>
     <div class="panel-header">
       <div class="panel-title" id="detail-title">Event</div>
-      <div style="display:flex;gap:6px;">
+      <div style="display:flex;gap:6px">
         <button class="btn-icon" id="detail-edit-btn" onclick="editFromDetail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
         <button class="btn-icon" onclick="closePanel('panel-detail')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
     </div>
-    <div id="detail-info" style="padding:12px 16px;border-bottom:1px solid var(--border);"></div>
-    <div id="detail-rsvp" style="padding:0 16px;border-bottom:1px solid var(--border);"></div>
-    <div style="padding:8px 16px;font-size:13px;font-weight:600;color:var(--text-dim);border-bottom:1px solid var(--border);">Chat</div>
+    <div id="detail-info" style="padding:12px 16px;border-bottom:1px solid var(--border)"></div>
+    <div id="detail-rsvp" style="padding:0 16px;border-bottom:1px solid var(--border)"></div>
+    <div style="padding:8px 16px;font-size:12px;font-weight:700;color:var(--text-faint);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em">Chat</div>
     <div id="detail-chat" class="chat-area"></div>
     <div class="chat-input-row">
-      <input id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
+      <input id="chat-input" placeholder="Message..." onkeydown="if(event.key==='Enter')sendChat()">
       <button class="btn btn-primary btn-sm" onclick="sendChat()">Send</button>
     </div>
   </div>
 </div>
 
 <!-- ============================================================
-     PANEL: New / Edit Group
+     PANEL: Group
      ============================================================ -->
 <div id="panel-group" class="panel">
   <div class="panel-backdrop" onclick="closePanel('panel-group')"></div>
@@ -501,28 +553,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
     </div>
     <div class="panel-scroll">
       <div class="field"><label>Group Name</label><input id="grp-name" placeholder="e.g. Friday Crew"></div>
-      <div class="field"><label>Members</label><div id="grp-members" class="cf-list"></div></div>
+      <div class="field"><label>Members</label><div id="grp-members" class="check-list"></div></div>
       <div id="grp-err" class="gate-err"></div>
-      <button class="btn btn-primary btn-full mt-16" onclick="saveGroup()">Save Group</button>
+      <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveGroup()">Save Group</button>
     </div>
-  </div>
-</div>
-
-<!-- ============================================================
-     PANEL: Day detail
-     ============================================================ -->
-<div id="panel-day" class="panel">
-  <div class="panel-backdrop" onclick="closePanel('panel-day')"></div>
-  <div class="panel-body">
-    <div class="panel-handle"></div>
-    <div class="panel-header">
-      <div class="panel-title" id="day-panel-title">Events</div>
-      <div style="display:flex;gap:6px;">
-        <button class="btn btn-sm btn-primary" onclick="openNewEventForDay()">+ Add</button>
-        <button class="btn-icon" onclick="closePanel('panel-day')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      </div>
-    </div>
-    <div id="day-events" class="event-list panel-scroll"></div>
   </div>
 </div>
 
@@ -539,960 +573,704 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
     </div>
     <div class="panel-scroll">
       <div class="settings-section">
-        <div class="settings-label">Appearance</div>
-        <div class="settings-row">
-          <span class="settings-row-label">Dark mode</span>
-          <button id="theme-toggle" class="toggle on" onclick="toggleTheme()"></button>
-        </div>
+        <div class="settings-heading">Appearance</div>
+        <div class="settings-row"><span>Dark mode</span><button id="theme-toggle" class="toggle on" onclick="toggleTheme()"></button></div>
       </div>
       <div class="settings-section">
-        <div class="settings-label">Close Friends</div>
-        <p class="text-sm text-dim mb-8">Events marked "Close Friends" are only visible to people on your close friends list.</p>
-        <div id="cf-settings-list" class="cf-list"></div>
+        <div class="settings-heading">Close Friends</div>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Events marked "Close Friends" are only visible to people on this list.</p>
+        <div id="cf-list" class="check-list"></div>
       </div>
       <div class="settings-section">
-        <div class="settings-label">Your Profile</div>
-        <div class="settings-row">
-          <span class="settings-row-label">Name</span>
-          <span id="settings-name" style="font-weight:600;"></span>
-        </div>
-        <div class="settings-row">
-          <span class="settings-row-label">Colour</span>
-          <div id="settings-color" style="width:24px;height:24px;border-radius:50%;"></div>
-        </div>
-      </div>
-      <div class="settings-section">
-        <div class="settings-label">Access Code</div>
-        <p id="settings-code" class="text-sm" style="font-family:monospace;letter-spacing:.05em;"></p>
+        <div class="settings-heading">Your Account</div>
+        <div class="settings-row"><span>Name</span><span id="s-name" style="font-weight:600"></span></div>
+        <div class="settings-row"><span>Colour</span><div id="s-color" style="width:22px;height:22px;border-radius:50%"></div></div>
+        <div class="settings-row"><span>Access code</span><span id="s-code" style="font-family:monospace;letter-spacing:.04em"></span></div>
       </div>
     </div>
   </div>
 </div>
 
 
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
 <script>
 /* ==============================================================
-   FIREBASE CONFIG
-   Replace these values with your own Firebase project config.
-   See README.md for setup instructions.
+   FIREBASE CONFIG — replace with your values
    ============================================================== */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBwrrJr7xR_p8ULAGrQMVKn_XIAhdTJ_cY",
-  authDomain: "cmas-social.firebaseapp.com",
-  databaseURL: "https://cmas-social-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "cmas-social",
-  storageBucket: "cmas-social.firebasestorage.app",
-  messagingSenderId: "655550772180",
-  appId: "1:655550772180:web:35eac4d4a7ebe1b5e65c41",
-  measurementId: "G-LPQQ2DTX5D"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
-
-
 
 /* ==============================================================
    CONSTANTS
    ============================================================== */
-const USER_COLORS = [
-  '#f06b6b','#f0a06b','#f0d76b','#6bf07a','#6bf0d7',
-  '#6bb8f0','#8b6bf0','#d76bf0','#f06bb8','#f09b6b',
-  '#6bf0a0','#6b8bf0'
-];
-const WEEKDAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const MONTHS = ['January','February','March','April','May','June',
-                'July','August','September','October','November','December'];
+const COLORS = ['#f06b6b','#f0a06b','#f0d76b','#6bf07a','#6bf0d7','#6bb8f0','#8b6bf0','#d76bf0','#f06bb8','#f09b6b','#6bf0a0','#6b8bf0'];
+const WDAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const MNAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MSHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 /* ==============================================================
    STATE
    ============================================================== */
-let fbDb = null;
-let currentUser = null;
-let allUsers = {};
-let allEvents = {};
-let allGroups = {};
-let chatMessages = {};
-let appConfig = null;
-let viewMonth = new Date().getMonth();
-let viewYear = new Date().getFullYear();
-let activeTab = 'calendar';
-let selectedDay = null;
-let detailEventId = null;
-let chatListener = null;
-let sessionId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+let db, me, appCfg;
+let users={}, events={}, groups={}, chatMsgs={};
+let selDate=todayStr(), calView='week';
+let viewWeekStart=getWeekStart(new Date()), viewMonth=new Date().getMonth(), viewYear=new Date().getFullYear();
+let availMonth=new Date().getMonth(), availYear=new Date().getFullYear();
+let activeTab='calendar', detailId=null, chatRef=null, pendingRecovery=null;
+let sessionId=Math.random().toString(36).slice(2)+Date.now().toString(36);
+
+function todayStr(){ const t=new Date(); return dk(t.getFullYear(),t.getMonth(),t.getDate()); }
+function dk(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function parseDate(s){ const p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
+function getWeekStart(d){ const day=d.getDay(); const diff=(day===0?-6:1-day); const r=new Date(d); r.setDate(r.getDate()+diff); return r; }
+function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function encKey(s){ return s.replace(/[.$#\[\]/]/g,'_'); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+/* ==============================================================
+   CRYPTO: SHA-256 hash for recovery codes
+   ============================================================== */
+async function sha256(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function generateCode() {
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I or O to avoid confusion
+  const digits = '0123456789';
+  let code = '';
+  for(let i=0;i<4;i++) code += letters[Math.floor(Math.random()*letters.length)];
+  code += '-';
+  for(let i=0;i<4;i++) code += digits[Math.floor(Math.random()*digits.length)];
+  return code;
+}
 
 /* ==============================================================
    INIT
    ============================================================== */
 function init() {
-  // Check config is filled in
   if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
-    document.getElementById('loading').innerHTML =
-      '<div style="text-align:center;padding:24px;max-width:400px;">' +
-      '<div style="font-size:20px;font-weight:700;margin-bottom:8px;">Setup needed</div>' +
-      '<div style="color:var(--text-dim);font-size:14px;">Open index.html and replace the FIREBASE_CONFIG values with your Firebase project credentials. See README.md for the full walkthrough.</div></div>';
+    document.getElementById('loading').innerHTML = '<div style="max-width:340px"><div style="font-size:18px;font-weight:700;margin-bottom:6px">Setup needed</div><div style="color:var(--text-dim);font-size:13px">Open index.html and replace the FIREBASE_CONFIG values with your Firebase project credentials. See README.md for the walkthrough.</div></div>';
     return;
   }
-
   firebase.initializeApp(FIREBASE_CONFIG);
-  fbDb = firebase.database();
+  db = firebase.database();
 
-  // Check if app is configured
-  fbDb.ref('config').once('value').then(snap => {
+  db.ref('config').once('value').then(snap => {
     if (!snap.exists()) {
-      showScreen('first-setup');
-      renderColorGrid('first-color-grid');
+      showScreen('gate-first');
+      renderColors('first-colors');
       return;
     }
-    appConfig = snap.val();
-
-    // Returning user?
+    appCfg = snap.val();
     const stored = localStorage.getItem('cmas-user');
     if (stored) {
       try {
-        const parsed = JSON.parse(stored);
-        fbDb.ref('users/' + encodeKey(parsed.name)).once('value').then(uSnap => {
-          if (uSnap.exists()) {
-            currentUser = uSnap.val();
-            startApp();
-          } else {
-            showScreen('gate');
-          }
+        const p = JSON.parse(stored);
+        db.ref('users/'+encKey(p.name)).once('value').then(u => {
+          if (u.exists()) { me = u.val(); startApp(); }
+          else showScreen('gate-welcome');
         });
-      } catch(e) { showScreen('gate'); }
+      } catch(e) { showScreen('gate-welcome'); }
     } else {
-      showScreen('gate');
+      showScreen('gate-welcome');
     }
   });
 }
 
-/* ==============================================================
-   SCREEN MANAGEMENT
-   ============================================================== */
 function showScreen(id) {
-  ['loading','gate','setup','first-setup','app'].forEach(s =>
-    document.getElementById(s).classList.add('hidden'));
+  ['loading','gate-welcome','gate-join','gate-profile','gate-recovery','gate-signin','gate-first','app']
+    .forEach(s => document.getElementById(s).classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
 
 /* ==============================================================
-   KEY ENCODING (Firebase keys can't contain . $ # [ ] /)
+   GATE FLOWS
    ============================================================== */
-function encodeKey(s) { return s.replace(/[.$#\[\]/]/g, '_'); }
+function showGateWelcome(){ showScreen('gate-welcome'); }
+function showGateJoin(){ showScreen('gate-join'); document.getElementById('join-code').focus(); }
+function showGateSignin(){ showScreen('gate-signin'); document.getElementById('signin-name').focus(); }
 
-/* ==============================================================
-   GATE
-   ============================================================== */
-function submitGate() {
-  const code = document.getElementById('gate-code').value.trim();
-  if (!code) { document.getElementById('gate-err').textContent = 'Enter the access code'; return; }
-  if (code !== appConfig.accessCode) {
-    document.getElementById('gate-err').textContent = 'Wrong code. Try again.';
-    return;
-  }
-  showScreen('setup');
-  renderColorGrid('color-grid');
-}
-document.getElementById('gate-code').addEventListener('keydown', e => { if(e.key==='Enter') submitGate(); });
-
-/* ==============================================================
-   SETUP (name + colour)
-   ============================================================== */
-let selectedColor = USER_COLORS[0];
-
-function renderColorGrid(containerId) {
-  const g = document.getElementById(containerId);
-  g.innerHTML = '';
-  USER_COLORS.forEach(c => {
+let selColor = COLORS[0];
+function renderColors(id) {
+  const g = document.getElementById(id); g.innerHTML='';
+  COLORS.forEach(c => {
     const d = document.createElement('div');
-    d.className = 'color-swatch' + (c === selectedColor ? ' selected' : '');
+    d.className = 'color-swatch'+(c===selColor?' selected':'');
     d.style.background = c;
-    d.onclick = () => {
-      selectedColor = c;
-      g.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-      d.classList.add('selected');
-    };
+    d.onclick = () => { selColor=c; g.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected')); d.classList.add('selected'); };
     g.appendChild(d);
   });
 }
 
-async function submitSetup() {
-  const name = document.getElementById('setup-name').value.trim();
-  if (!name) { document.getElementById('setup-err').textContent = 'Enter a name'; return; }
-  if (name.length > 20) { document.getElementById('setup-err').textContent = 'Name too long'; return; }
+// Join: enter access code
+function submitJoinCode() {
+  const code = document.getElementById('join-code').value.trim();
+  if (!code) { document.getElementById('join-err').textContent='Enter the access code'; return; }
+  if (code !== appCfg.accessCode) { document.getElementById('join-err').textContent='Wrong code'; return; }
+  showScreen('gate-profile');
+  renderColors('profile-colors');
+}
+document.getElementById('join-code').addEventListener('keydown',e=>{if(e.key==='Enter')submitJoinCode()});
 
-  const key = encodeKey(name);
-  const snap = await fbDb.ref('users/' + key).once('value');
-  if (snap.exists()) {
-    document.getElementById('setup-err').textContent = 'That name is taken. Pick another.';
-    return;
-  }
+// Profile: pick name + colour, generate recovery code
+async function submitProfile() {
+  const name = document.getElementById('profile-name').value.trim();
+  if (!name) { document.getElementById('profile-err').textContent='Enter a name'; return; }
+  if (name.length>20) { document.getElementById('profile-err').textContent='Too long (20 max)'; return; }
 
-  const user = { name, color: selectedColor, closeFriends: {}, created: Date.now() };
-  await fbDb.ref('users/' + key).set(user);
-  currentUser = user;
-  localStorage.setItem('cmas-user', JSON.stringify({ name }));
+  const snap = await db.ref('users/'+encKey(name)).once('value');
+  if (snap.exists()) { document.getElementById('profile-err').textContent='Name taken, try another'; return; }
 
-  // Auto-join "Everyone" group
-  fbDb.ref('groups').once('value').then(gs => {
+  const code = generateCode();
+  const hash = await sha256(code);
+
+  pendingRecovery = { name, color: selColor, code, hash };
+  document.getElementById('recovery-display').textContent = code;
+  showScreen('gate-recovery');
+}
+
+async function confirmRecovery() {
+  const { name, color, hash } = pendingRecovery;
+  const user = { name, color, closeFriends:{}, codeHash: hash, created: Date.now() };
+  await db.ref('users/'+encKey(name)).set(user);
+  me = user;
+  localStorage.setItem('cmas-user', JSON.stringify({name}));
+
+  // Auto-join Everyone group
+  db.ref('groups').once('value').then(gs => {
     gs.forEach(g => {
-      if (g.val().name === 'Everyone') {
-        const members = g.val().members || {};
-        if (!Object.values(members).includes(name)) {
-          fbDb.ref('groups/' + g.key + '/members').push(name);
-        }
+      if (g.val().name==='Everyone') {
+        const m = g.val().members||{};
+        if (!Object.values(m).includes(name)) db.ref('groups/'+g.key+'/members').push(name);
       }
     });
   });
 
+  pendingRecovery = null;
   startApp();
 }
 
-/* ==============================================================
-   FIRST-TIME SETUP (creator)
-   ============================================================== */
-async function submitFirstSetup() {
+// Sign in (existing user, new device)
+async function submitSignin() {
+  const name = document.getElementById('signin-name').value.trim();
+  const code = document.getElementById('signin-code').value.trim().toUpperCase();
+  if (!name||!code) { document.getElementById('signin-err').textContent='Enter both fields'; return; }
+
+  const snap = await db.ref('users/'+encKey(name)).once('value');
+  if (!snap.exists()) { document.getElementById('signin-err').textContent='User not found'; return; }
+
+  const user = snap.val();
+  const hash = await sha256(code);
+  if (hash !== user.codeHash) { document.getElementById('signin-err').textContent='Wrong recovery code'; return; }
+
+  me = user;
+  localStorage.setItem('cmas-user', JSON.stringify({name}));
+  startApp();
+}
+
+// First-time creator
+async function submitFirst() {
   const code = document.getElementById('first-code').value.trim();
   const name = document.getElementById('first-name').value.trim();
-  if (!code) { document.getElementById('first-err').textContent = 'Set an access code'; return; }
-  if (code.length < 3) { document.getElementById('first-err').textContent = 'Code needs at least 3 characters'; return; }
-  if (!name) { document.getElementById('first-err').textContent = 'Enter your name'; return; }
+  if (!code||code.length<3) { document.getElementById('first-err').textContent='Code needs 3+ characters'; return; }
+  if (!name) { document.getElementById('first-err').textContent='Enter your name'; return; }
 
-  await fbDb.ref('config').set({ accessCode: code, created: Date.now() });
-  appConfig = { accessCode: code };
+  await db.ref('config').set({ accessCode:code, created:Date.now() });
+  appCfg = { accessCode:code };
 
-  // Default group
-  const grpRef = fbDb.ref('groups').push();
-  await grpRef.set({ name: 'Everyone', members: { 0: name }, created: Date.now() });
+  await db.ref('groups').push().set({ name:'Everyone', members:{0:name}, created:Date.now() });
 
-  const user = { name, color: selectedColor, closeFriends: {}, created: Date.now() };
-  await fbDb.ref('users/' + encodeKey(name)).set(user);
-  currentUser = user;
-  localStorage.setItem('cmas-user', JSON.stringify({ name }));
-  startApp();
+  const recoveryCode = generateCode();
+  const hash = await sha256(recoveryCode);
+  const user = { name, color:selColor, closeFriends:{}, codeHash:hash, created:Date.now() };
+  await db.ref('users/'+encKey(name)).set(user);
+  me = user;
+  localStorage.setItem('cmas-user', JSON.stringify({name}));
+
+  pendingRecovery = { code: recoveryCode };
+  document.getElementById('recovery-display').textContent = recoveryCode;
+  showScreen('gate-recovery');
 }
 
 /* ==============================================================
-   MAIN APP STARTUP
+   MAIN APP
    ============================================================== */
 function startApp() {
   showScreen('app');
-  document.getElementById('settings-name').textContent = currentUser.name;
-  document.getElementById('settings-color').style.background = currentUser.color;
-  document.getElementById('settings-code').textContent = appConfig.accessCode;
+  document.getElementById('s-name').textContent = me.name;
+  document.getElementById('s-color').style.background = me.color;
+  document.getElementById('s-code').textContent = appCfg.accessCode;
 
-  // Restore theme
-  const savedTheme = localStorage.getItem('cmas-theme');
-  if (savedTheme === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-    document.getElementById('theme-toggle').classList.remove('on');
-  } else if (savedTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.getElementById('theme-toggle').classList.add('on');
-  }
+  const t = localStorage.getItem('cmas-theme');
+  if(t==='light'){document.documentElement.setAttribute('data-theme','light');document.getElementById('theme-toggle').classList.remove('on');}
+  else if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}
 
-  // ---- Real-time listeners ----
+  db.ref('users').on('value',s=>{users={};s.forEach(c=>{users[c.val().name]=c.val();});renderAll();});
+  db.ref('events').on('value',s=>{events={};s.forEach(c=>{events[c.key]={id:c.key,...c.val()};});renderAll();if(detailId&&events[detailId])renderDetail(detailId);});
+  db.ref('groups').on('value',s=>{allG={};s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];allG[c.key]={id:c.key,...v};});groups=allG;renderGroups();renderGroupOpts();});
 
-  // Users
-  fbDb.ref('users').on('value', snap => {
-    allUsers = {};
-    snap.forEach(c => { allUsers[c.val().name] = c.val(); });
-    renderAvailLegend();
-    renderOnline();
-    renderAll();
-  });
-
-  // Events
-  fbDb.ref('events').on('value', snap => {
-    allEvents = {};
-    snap.forEach(c => { allEvents[c.key] = { id: c.key, ...c.val() }; });
-    renderAll();
-    if (detailEventId && allEvents[detailEventId]) renderDetail(detailEventId);
-    if (selectedDay) renderDayPanel(selectedDay);
-  });
-
-  // Groups
-  fbDb.ref('groups').on('value', snap => {
-    allGroups = {};
-    snap.forEach(c => {
-      const val = c.val();
-      // Normalise members from object to array
-      val.members = val.members ? Object.values(val.members) : [];
-      allGroups[c.key] = { id: c.key, ...val };
-    });
-    renderGroups();
-    renderGroupOptions();
-  });
-
-  // Presence
   setupPresence();
-  renderCalendar();
-}
-
-function renderAll() {
-  renderCalendar();
-  renderAvailability();
-  renderPlans();
-}
-
-/* ==============================================================
-   PRESENCE (who's online)
-   ============================================================== */
-function setupPresence() {
-  const connRef = firebase.database().ref('.info/connected');
-  const myRef = fbDb.ref('presence/' + sessionId);
-
-  connRef.on('value', snap => {
-    if (snap.val() === true) {
-      myRef.set({ name: currentUser.name, color: currentUser.color, ts: firebase.database.ServerValue.TIMESTAMP });
-      myRef.onDisconnect().remove();
-    }
-  });
-
-  // Listen to all presence
-  fbDb.ref('presence').on('value', snap => {
-    const now = Date.now();
-    const peers = [];
-    const seen = new Set();
-    snap.forEach(c => {
-      const p = c.val();
-      // Consider stale after 2 minutes
-      if (p.name && !seen.has(p.name) && (now - (p.ts || 0)) < 120000) {
-        seen.add(p.name);
-        peers.push(p);
-      }
-    });
-    renderOnlineBar(peers);
-  });
-}
-
-function renderOnlineBar(peers) {
-  const bar = document.getElementById('online-bar');
-  const names = document.getElementById('online-names');
-  if (peers.length < 2) { bar.classList.add('hidden'); return; }
-  bar.classList.remove('hidden');
-  names.innerHTML = '';
-  peers.forEach(p => {
-    const s = document.createElement('span');
-    s.className = 'online-name';
-    s.style.background = p.color || '#555';
-    s.textContent = p.name;
-    names.appendChild(s);
-  });
-}
-
-function renderOnline() { /* handled by presence listener */ }
-
-/* ==============================================================
-   TAB SWITCHING
-   ============================================================== */
-function switchTab(tab) {
-  activeTab = tab;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + tab).classList.add('active');
   renderAll();
-  if (tab === 'groups') renderGroups();
+}
+
+function renderAll(){ renderWeek(); renderMonth(); renderAvail(); renderPlans(); }
+
+/* ==============================================================
+   PRESENCE
+   ============================================================== */
+function setupPresence(){
+  const connRef=firebase.database().ref('.info/connected');
+  const myRef=db.ref('presence/'+sessionId);
+  connRef.on('value',s=>{if(s.val()===true){myRef.set({name:me.name,color:me.color,ts:firebase.database.ServerValue.TIMESTAMP});myRef.onDisconnect().remove();}});
+  db.ref('presence').on('value',s=>{
+    const now=Date.now(), seen=new Set(), peers=[];
+    s.forEach(c=>{const p=c.val();if(p.name&&!seen.has(p.name)&&(now-(p.ts||0))<120000){seen.add(p.name);peers.push(p);}});
+    const bar=document.getElementById('online-bar'),names=document.getElementById('online-names');
+    if(peers.length<2){bar.classList.remove('show');return;}
+    bar.classList.add('show');
+    names.innerHTML='';
+    peers.forEach(p=>{const s=document.createElement('span');s.className='online-tag';s.style.background=p.color||'#555';s.textContent=p.name;names.appendChild(s);});
+  });
 }
 
 /* ==============================================================
-   CALENDAR
+   TABS
    ============================================================== */
-function getMonthDays(year, month) {
-  const first = new Date(year, month, 1);
-  let startDay = first.getDay() - 1;
-  if (startDay < 0) startDay = 6;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDays = new Date(year, month, 0).getDate();
-  const days = [];
-  for (let i = startDay - 1; i >= 0; i--)
-    days.push({ day: prevDays - i, month: month - 1, year: month === 0 ? year - 1 : year, other: true });
-  for (let i = 1; i <= daysInMonth; i++)
-    days.push({ day: i, month, year, other: false });
-  const remaining = 42 - days.length;
-  for (let i = 1; i <= remaining; i++)
-    days.push({ day: i, month: month + 1, year: month === 11 ? year + 1 : year, other: true });
-  return days;
+function switchTab(tab){
+  activeTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  document.getElementById('cal-view-toggle').classList.toggle('hidden',tab!=='calendar');
+  document.getElementById('fab').classList.toggle('hidden',tab==='groups');
+  renderAll();
 }
 
-function dateKey(y, m, d) {
-  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-}
-
-function getVisibleEvents() {
-  return Object.values(allEvents).filter(ev => {
-    if (ev.privacy === 'me' && ev.creator !== currentUser.name) return false;
-    if (ev.privacy === 'close') {
-      if (ev.creator === currentUser.name) return true;
-      const creator = allUsers[ev.creator];
-      const cf = creator && creator.closeFriends ? Object.values(creator.closeFriends) : [];
-      if (!cf.includes(currentUser.name)) return false;
+/* ==============================================================
+   VISIBLE EVENTS (privacy filter)
+   ============================================================== */
+function visibleEvents(){
+  return Object.values(events).filter(ev=>{
+    if(ev.privacy==='me'&&ev.creator!==me.name)return false;
+    if(ev.privacy==='close'){
+      if(ev.creator===me.name)return true;
+      const cr=users[ev.creator];
+      const cf=cr&&cr.closeFriends?Object.values(cr.closeFriends):[];
+      return cf.includes(me.name);
     }
     return true;
   });
 }
 
-function renderCalendar() {
-  document.getElementById('cal-month-label').textContent = MONTHS[viewMonth] + ' ' + viewYear;
-  document.getElementById('cal-weekdays').innerHTML = WEEKDAYS.map(d => `<div class="cal-weekday">${d}</div>`).join('');
-
-  const grid = document.getElementById('cal-grid');
-  const days = getMonthDays(viewYear, viewMonth);
-  const today = new Date();
-  const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
-  const events = getVisibleEvents();
-  const byDate = {};
-  events.forEach(ev => { (byDate[ev.date] = byDate[ev.date] || []).push(ev); });
-
-  grid.innerHTML = '';
-  days.forEach(d => {
-    const dk = dateKey(d.year, d.month, d.day);
-    const cell = document.createElement('div');
-    cell.className = 'cal-day' + (d.other ? ' other-month' : '') + (dk === todayKey ? ' today' : '');
-    cell.onclick = () => { selectedDay = dk; openDayPanel(dk, d); };
-
-    const num = document.createElement('div');
-    num.className = 'cal-day-num';
-    num.textContent = d.day;
-    cell.appendChild(num);
-
-    const dayEvts = byDate[dk] || [];
-    if (dayEvts.length > 0) {
-      const dots = document.createElement('div');
-      dots.className = 'cal-day-dots';
-      dayEvts.slice(0, 5).forEach(ev => {
-        const dot = document.createElement('div');
-        dot.className = 'cal-dot';
-        dot.style.background = (allUsers[ev.creator] || {}).color || '#888';
-        dots.appendChild(dot);
-      });
-      if (dayEvts.length > 5) {
-        const more = document.createElement('span');
-        more.style.cssText = 'font-size:9px;color:var(--text-dim);';
-        more.textContent = '+' + (dayEvts.length - 5);
-        dots.appendChild(more);
-      }
-      cell.appendChild(dots);
-    }
-    grid.appendChild(cell);
-  });
+function eventsByDate(){
+  const map={};
+  visibleEvents().forEach(ev=>{(map[ev.date]=map[ev.date]||[]).push(ev);});
+  return map;
 }
 
-function calPrev() { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderAll(); }
-function calNext() { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderAll(); }
-function calToday() { const t = new Date(); viewMonth = t.getMonth(); viewYear = t.getFullYear(); renderAll(); }
+/* ==============================================================
+   WEEK VIEW
+   ============================================================== */
+function renderWeek(){
+  const start = viewWeekStart;
+  const end = addDays(start,6);
+  document.getElementById('week-label').textContent =
+    start.getDate()+' '+MSHORT[start.getMonth()]+(start.getMonth()!==end.getMonth()?' - '+end.getDate()+' '+MSHORT[end.getMonth()]:' - '+end.getDate())+' '+end.getFullYear();
+
+  const strip=document.getElementById('week-strip');
+  const today=todayStr();
+  const ebd=eventsByDate();
+  strip.innerHTML='';
+  for(let i=0;i<7;i++){
+    const d=addDays(start,i);
+    const key=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    const col=document.createElement('div');
+    col.className='week-day-col'+(key===today?' today':'')+(key===selDate?' selected':'');
+    col.innerHTML=`<div class="week-day-name">${WDAYS[i]}</div><div class="week-day-num">${d.getDate()}</div><div class="week-day-dot${(ebd[key]&&ebd[key].length)?' has-events':''}"></div>`;
+    col.onclick=()=>{selDate=key;renderWeek();};
+    strip.appendChild(col);
+  }
+
+  const sd=parseDate(selDate);
+  document.getElementById('selected-day-label').textContent=sd.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  renderDayList('day-events',selDate);
+}
+
+function weekPrev(){viewWeekStart=addDays(viewWeekStart,-7);renderWeek();}
+function weekNext(){viewWeekStart=addDays(viewWeekStart,7);renderWeek();}
+function weekToday(){viewWeekStart=getWeekStart(new Date());selDate=todayStr();renderWeek();}
+
+/* ==============================================================
+   MONTH VIEW
+   ============================================================== */
+function getMonthDays(y,m){
+  const first=new Date(y,m,1);let sd=first.getDay()-1;if(sd<0)sd=6;
+  const dim=new Date(y,m+1,0).getDate(), prev=new Date(y,m,0).getDate();
+  const days=[];
+  for(let i=sd-1;i>=0;i--)days.push({day:prev-i,m:m-1,y:m===0?y-1:y,other:true});
+  for(let i=1;i<=dim;i++)days.push({day:i,m,y,other:false});
+  const rem=42-days.length;
+  for(let i=1;i<=rem;i++)days.push({day:i,m:m+1,y:m===11?y+1:y,other:true});
+  return days;
+}
+
+function renderMonth(){
+  document.getElementById('month-label').textContent=MNAMES[viewMonth]+' '+viewYear;
+  document.getElementById('month-weekdays').innerHTML=WDAYS.map(d=>`<div class="month-weekday">${d}</div>`).join('');
+  const grid=document.getElementById('month-grid');
+  const days=getMonthDays(viewYear,viewMonth);
+  const today=todayStr(), ebd=eventsByDate();
+  grid.innerHTML='';
+  days.forEach(d=>{
+    const key=dk(d.y,d.m,d.day);
+    const cell=document.createElement('div');
+    cell.className='month-cell'+(d.other?' other':'')+(key===today?' today':'')+(key===selDate?' selected':'');
+    let html=`<div class="month-cell-num">${d.day}</div>`;
+    const devs=ebd[key]||[];
+    if(devs.length){html+='<div class="month-cell-dots">';devs.slice(0,3).forEach(ev=>{html+=`<div class="month-dot" style="background:${(users[ev.creator]||{}).color||'#888'}"></div>`;});html+='</div>';}
+    cell.innerHTML=html;
+    cell.onclick=()=>{selDate=key;renderMonth();renderMonthDay();};
+    grid.appendChild(cell);
+  });
+  renderMonthDay();
+}
+
+function renderMonthDay(){
+  const sd=parseDate(selDate);
+  document.getElementById('month-day-label').textContent=sd.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  renderDayList('month-day-events',selDate);
+}
+
+function monthPrev(){viewMonth--;if(viewMonth<0){viewMonth=11;viewYear--;}renderMonth();}
+function monthNext(){viewMonth++;if(viewMonth>11){viewMonth=0;viewYear++;}renderMonth();}
+function monthToday(){viewMonth=new Date().getMonth();viewYear=new Date().getFullYear();selDate=todayStr();renderMonth();}
+
+function setCalView(v){
+  calView=v;
+  document.querySelectorAll('.view-toggle-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  document.getElementById('week-view').classList.toggle('hidden',v!=='week');
+  document.getElementById('month-view').classList.toggle('hidden',v!=='month');
+}
+
+/* ==============================================================
+   DAY LIST (shared between views)
+   ============================================================== */
+function renderDayList(containerId,dateKey){
+  const c=document.getElementById(containerId);
+  const evts=visibleEvents().filter(e=>e.date===dateKey).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  if(!evts.length){c.innerHTML='<div class="day-empty">Nothing planned</div>';return;}
+  c.innerHTML='';
+  evts.forEach(ev=>{
+    const card=document.createElement('div');card.className='ev-card';card.onclick=()=>openDetail(ev.id);
+    const cr=users[ev.creator]||{};
+    let badges='';
+    if(ev.type==='plan'&&ev.rsvps){
+      const v=Object.values(ev.rsvps);
+      const g=v.filter(s=>s==='going').length,m=v.filter(s=>s==='maybe').length;
+      if(g)badges+=`<span class="ev-badge" style="background:var(--success-dim);color:var(--success)">${g} going</span>`;
+      if(m)badges+=`<span class="ev-badge" style="background:var(--warning-dim);color:var(--warning)">${m} maybe</span>`;
+    }
+    card.innerHTML=`<div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${esc(ev.title)}</div><div class="ev-meta">${ev.time?ev.time:'All day'}${ev.location?' · '+esc(ev.location):''}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div>`;
+    c.appendChild(card);
+  });
+}
 
 /* ==============================================================
    AVAILABILITY
    ============================================================== */
-function renderAvailLegend() {
-  const legend = document.getElementById('avail-legend');
-  legend.innerHTML = '';
-  Object.values(allUsers).forEach(u => {
-    const item = document.createElement('div');
-    item.className = 'avail-legend-item';
-    item.innerHTML = `<div class="avail-legend-dot" style="background:${u.color}"></div>${esc(u.name)}`;
+function renderAvail(){
+  document.getElementById('avail-label').textContent=MNAMES[availMonth]+' '+availYear;
+  document.getElementById('avail-weekdays').innerHTML=WDAYS.map(d=>`<div class="month-weekday">${d}</div>`).join('');
+
+  const legend=document.getElementById('avail-legend');legend.innerHTML='';
+  Object.values(users).forEach(u=>{
+    const item=document.createElement('div');item.className='avail-chip';
+    item.innerHTML=`<div class="avail-chip-dot" style="background:${u.color}"></div>${esc(u.name)}`;
     legend.appendChild(item);
   });
+
+  const grid=document.getElementById('avail-grid');
+  const days=getMonthDays(availYear,availMonth);
+  const evs=visibleEvents();
+  const busyMap={};
+  evs.forEach(ev=>{const s=busyMap[ev.date]=busyMap[ev.date]||new Set();s.add(ev.creator);if(ev.rsvps)Object.entries(ev.rsvps).forEach(([n,st])=>{if(st==='going')s.add(n);});});
+  const ulist=Object.values(users);
+  grid.innerHTML='';
+  days.forEach(d=>{
+    const key=dk(d.y,d.m,d.day);
+    const cell=document.createElement('div');cell.className='avail-cell'+(d.other?' other':'');
+    let html=`<div class="avail-cell-num">${d.day}</div><div class="avail-pips">`;
+    const busy=busyMap[key]||new Set();
+    ulist.forEach(u=>{html+=`<div class="avail-pip" style="background:${busy.has(u.name)?u.color:'transparent'};border-color:${u.color}" title="${u.name}: ${busy.has(u.name)?'busy':'free'}"></div>`;});
+    html+='</div>';cell.innerHTML=html;grid.appendChild(cell);
+  });
 }
+function availPrev(){availMonth--;if(availMonth<0){availMonth=11;availYear--;}renderAvail();}
+function availNext(){availMonth++;if(availMonth>11){availMonth=0;availYear++;}renderAvail();}
+function availToday(){availMonth=new Date().getMonth();availYear=new Date().getFullYear();renderAvail();}
 
-function renderAvailability() {
-  document.getElementById('avail-month-label').textContent = MONTHS[viewMonth] + ' ' + viewYear;
-  document.getElementById('avail-weekdays').innerHTML = WEEKDAYS.map(d => `<div class="cal-weekday">${d}</div>`).join('');
-
-  const grid = document.getElementById('avail-grid');
-  const days = getMonthDays(viewYear, viewMonth);
-  const events = getVisibleEvents();
-  const busyMap = {};
-  events.forEach(ev => {
-    const s = busyMap[ev.date] = busyMap[ev.date] || new Set();
-    s.add(ev.creator);
-    if (ev.rsvps) {
-      Object.entries(ev.rsvps).forEach(([name, status]) => {
-        if (status === 'going') s.add(name);
-      });
+/* ==============================================================
+   PLANS
+   ============================================================== */
+function renderPlans(){
+  const c=document.getElementById('plans-list');
+  const plans=visibleEvents().filter(e=>e.type==='plan').sort((a,b)=>a.date>b.date?1:-1);
+  if(!plans.length){c.innerHTML='<div class="day-empty">No plans yet</div>';return;}
+  c.innerHTML='';
+  plans.forEach(ev=>{
+    const card=document.createElement('div');card.className='ev-card';card.onclick=()=>openDetail(ev.id);
+    const cr=users[ev.creator]||{};
+    const d=parseDate(ev.date);
+    let badges='';
+    if(ev.rsvps){
+      const v=Object.values(ev.rsvps);
+      const g=v.filter(s=>s==='going').length,m=v.filter(s=>s==='maybe').length,n=v.filter(s=>s==='not').length;
+      if(g)badges+=`<span class="ev-badge" style="background:var(--success-dim);color:var(--success)">${g} going</span>`;
+      if(m)badges+=`<span class="ev-badge" style="background:var(--warning-dim);color:var(--warning)">${m} maybe</span>`;
+      if(n)badges+=`<span class="ev-badge" style="background:var(--danger-dim);color:var(--danger)">${n} can't</span>`;
     }
-  });
-  const userList = Object.values(allUsers);
-
-  grid.innerHTML = '';
-  days.forEach(d => {
-    const dk = dateKey(d.year, d.month, d.day);
-    const cell = document.createElement('div');
-    cell.className = 'avail-cell' + (d.other ? ' other-month' : '');
-    cell.onclick = () => { selectedDay = dk; openDayPanel(dk, d); };
-
-    const num = document.createElement('div');
-    num.className = 'avail-cell-num';
-    num.textContent = d.day;
-    cell.appendChild(num);
-
-    const people = document.createElement('div');
-    people.className = 'avail-people';
-    const busy = busyMap[dk] || new Set();
-    userList.forEach(u => {
-      const pip = document.createElement('div');
-      pip.className = 'avail-pip';
-      pip.style.background = busy.has(u.name) ? u.color : 'transparent';
-      pip.style.borderColor = u.color;
-      pip.title = u.name + (busy.has(u.name) ? ' (busy)' : ' (free)');
-      people.appendChild(pip);
-    });
-    cell.appendChild(people);
-    grid.appendChild(cell);
+    card.innerHTML=`<div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${esc(ev.title)}</div><div class="ev-meta">${d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}${ev.time?' at '+ev.time:''}${ev.location?' · '+esc(ev.location):''}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div>`;
+    c.appendChild(card);
   });
 }
 
 /* ==============================================================
-   DAY PANEL
+   GROUPS
    ============================================================== */
-function openDayPanel(dk, d) {
-  selectedDay = dk;
-  const date = new Date(d.year, d.month, d.day);
-  document.getElementById('day-panel-title').textContent =
-    date.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
-  renderDayPanel(dk);
-  openPanel('panel-day');
+function renderGroups(){
+  const c=document.getElementById('groups-list');
+  const gl=Object.values(groups);
+  if(!gl.length){c.innerHTML='<div class="day-empty">No groups yet</div>';return;}
+  c.innerHTML='';
+  gl.forEach(g=>{
+    const card=document.createElement('div');card.className='group-card';card.onclick=()=>openEditGroup(g.id);
+    let chips='';g.members.forEach(m=>{const u=users[m]||{};chips+=`<span class="member-chip" style="background:${u.color||'#555'}">${esc(m)}</span>`;});
+    card.innerHTML=`<div class="group-name">${esc(g.name)}</div><div class="group-meta">${g.members.length} member${g.members.length!==1?'s':''}</div><div class="group-members">${chips}</div>`;
+    c.appendChild(card);
+  });
 }
 
-function renderDayPanel(dk) {
-  const container = document.getElementById('day-events');
-  const events = getVisibleEvents().filter(e => e.date === dk);
-  if (events.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>Nothing on this day yet</p></div>';
-    return;
-  }
-  container.innerHTML = '';
-  events.forEach(ev => container.appendChild(makeEventCard(ev)));
+function renderGroupOpts(){
+  const sel=document.getElementById('ev-group');
+  sel.innerHTML='<option value="">No group</option>';
+  Object.values(groups).forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.name;sel.appendChild(o);});
 }
 
-function openNewEventForDay() {
-  closePanel('panel-day');
-  openNewEvent('event', selectedDay);
+function openNewGroup(){
+  document.getElementById('panel-group-title').textContent='New Group';
+  document.getElementById('grp-name').value='';document.getElementById('grp-err').textContent='';
+  document.getElementById('panel-group')._editId=null;
+  renderMemberChecks([me.name]);openPanel('panel-group');
 }
 
-/* ==============================================================
-   PLANS LIST
-   ============================================================== */
-function renderPlans() {
-  const container = document.getElementById('plans-list');
-  const plans = getVisibleEvents().filter(e => e.type === 'plan').sort((a, b) => a.date > b.date ? 1 : -1);
-  if (plans.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>No plans yet. Create one to get started.</p></div>';
-    return;
-  }
-  container.innerHTML = '';
-  plans.forEach(ev => container.appendChild(makeEventCard(ev)));
+function openEditGroup(id){
+  const g=groups[id];if(!g)return;
+  document.getElementById('panel-group-title').textContent='Edit Group';
+  document.getElementById('grp-name').value=g.name;document.getElementById('grp-err').textContent='';
+  document.getElementById('panel-group')._editId=id;
+  renderMemberChecks(g.members);openPanel('panel-group');
 }
 
-/* ==============================================================
-   EVENT CARD (reusable)
-   ============================================================== */
-function makeEventCard(ev) {
-  const card = document.createElement('div');
-  card.className = 'event-card';
-  card.onclick = () => openDetail(ev.id);
+function renderMemberChecks(sel){
+  const c=document.getElementById('grp-members');c.innerHTML='';
+  Object.values(users).forEach(u=>{
+    const row=document.createElement('div');row.className='check-row';
+    const chk=sel.includes(u.name);
+    row.innerHTML=`<span class="check-row-name"><span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block"></span> ${esc(u.name)}</span><button class="check-box ${chk?'checked':''}" data-name="${esc(u.name)}" onclick="this.classList.toggle('checked')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+    c.appendChild(row);
+  });
+}
 
-  const colorBar = document.createElement('div');
-  colorBar.className = 'event-color';
-  colorBar.style.background = (allUsers[ev.creator] || {}).color || '#888';
-  card.appendChild(colorBar);
-
-  const info = document.createElement('div');
-  info.className = 'event-info';
-
-  const title = document.createElement('div');
-  title.className = 'event-title';
-  title.textContent = ev.title;
-  info.appendChild(title);
-
-  const meta = document.createElement('div');
-  meta.className = 'event-meta';
-  const d = new Date(ev.date + 'T00:00:00');
-  let metaText = d.toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short' });
-  if (ev.time) metaText += ' at ' + ev.time;
-  if (ev.location) metaText += ' · ' + ev.location;
-  meta.textContent = metaText;
-  info.appendChild(meta);
-
-  if (ev.type === 'plan' && ev.rsvps) {
-    const row = document.createElement('div');
-    row.className = 'event-rsvp-row';
-    const vals = Object.values(ev.rsvps);
-    const going = vals.filter(s => s === 'going').length;
-    const maybe = vals.filter(s => s === 'maybe').length;
-    const not_ = vals.filter(s => s === 'not').length;
-    if (going) { const b = document.createElement('span'); b.className='event-rsvp-badge'; b.style.cssText='background:rgba(74,222,128,.1);color:var(--success)'; b.textContent=going+' going'; row.appendChild(b); }
-    if (maybe) { const b = document.createElement('span'); b.className='event-rsvp-badge'; b.style.cssText='background:rgba(251,191,36,.1);color:var(--warning)'; b.textContent=maybe+' maybe'; row.appendChild(b); }
-    if (not_) { const b = document.createElement('span'); b.className='event-rsvp-badge'; b.style.cssText='background:rgba(240,107,107,.1);color:var(--danger)'; b.textContent=not_+" can't"; row.appendChild(b); }
-    info.appendChild(row);
-  }
-
-  const priv = document.createElement('span');
-  priv.className = 'privacy-chip privacy-' + (ev.privacy === 'close' ? 'close' : ev.privacy === 'me' ? 'me' : 'everyone');
-  priv.textContent = ev.privacy === 'close' ? 'Close Friends' : ev.privacy === 'me' ? 'Just Me' : 'Everyone';
-  priv.style.marginTop = '6px';
-  info.appendChild(priv);
-
-  card.appendChild(info);
-  return card;
+async function saveGroup(){
+  const id=document.getElementById('panel-group')._editId;
+  const name=document.getElementById('grp-name').value.trim();
+  if(!name){document.getElementById('grp-err').textContent='Enter a name';return;}
+  const checks=document.getElementById('grp-members').querySelectorAll('.check-box');
+  const members={};let idx=0;
+  checks.forEach(c=>{if(c.classList.contains('checked')){members[idx]=c.dataset.name;idx++;}});
+  if(!idx){document.getElementById('grp-err').textContent='Add at least one member';return;}
+  if(id)await db.ref('groups/'+id).update({name,members});
+  else await db.ref('groups').push().set({name,members,created:Date.now()});
+  closePanel('panel-group');
 }
 
 /* ==============================================================
    EVENT CRUD
    ============================================================== */
-function openNewEvent(type, date) {
-  document.getElementById('panel-event-title').textContent = 'New Event';
-  document.getElementById('ev-id').value = '';
-  document.getElementById('ev-title').value = '';
-  document.getElementById('ev-date').value = date || '';
-  document.getElementById('ev-time').value = '';
-  document.getElementById('ev-location').value = '';
-  document.getElementById('ev-desc').value = '';
-  document.getElementById('ev-privacy').value = 'everyone';
-  document.getElementById('ev-type').value = type || 'event';
-  document.getElementById('ev-err').textContent = '';
+function openNewEvent(type){
+  document.getElementById('panel-event-title').textContent='New Event';
+  document.getElementById('ev-id').value='';
+  document.getElementById('ev-title').value='';
+  document.getElementById('ev-date').value=selDate;
+  document.getElementById('ev-time').value='';
+  document.getElementById('ev-location').value='';
+  document.getElementById('ev-desc').value='';
+  document.getElementById('ev-privacy').value='everyone';
+  document.getElementById('ev-type').value=type||'event';
+  document.getElementById('ev-err').textContent='';
   document.getElementById('ev-delete-btn').classList.add('hidden');
-  renderGroupOptions();
-  openPanel('panel-event');
+  renderGroupOpts();openPanel('panel-event');
 }
 
-function renderGroupOptions() {
-  const sel = document.getElementById('ev-group');
-  sel.innerHTML = '<option value="">No group</option>';
-  Object.values(allGroups).forEach(g => {
-    const opt = document.createElement('option');
-    opt.value = g.id; opt.textContent = g.name;
-    sel.appendChild(opt);
-  });
-}
-
-async function saveEvent() {
-  const id = document.getElementById('ev-id').value;
-  const title = document.getElementById('ev-title').value.trim();
-  const date = document.getElementById('ev-date').value;
-  const time = document.getElementById('ev-time').value;
-  const location = document.getElementById('ev-location').value.trim();
-  const desc = document.getElementById('ev-desc').value.trim();
-  const group = document.getElementById('ev-group').value;
-  const privacy = document.getElementById('ev-privacy').value;
-  const type = document.getElementById('ev-type').value;
-
-  if (!title) { document.getElementById('ev-err').textContent = 'Give it a title'; return; }
-  if (!date) { document.getElementById('ev-err').textContent = 'Pick a date'; return; }
-
-  const data = { title, date, time, location, desc, groupId: group, privacy, type, creator: currentUser.name, updated: Date.now() };
-
-  try {
-    if (id) {
-      await fbDb.ref('events/' + id).update(data);
-    } else {
-      data.rsvps = {};
-      data.created = Date.now();
-      await fbDb.ref('events').push().set(data);
-    }
-    closePanel('panel-event');
-  } catch(e) {
-    document.getElementById('ev-err').textContent = 'Error saving: ' + e.message;
-  }
-}
-
-async function deleteEvent() {
-  const id = document.getElementById('ev-id').value;
-  if (!id || !confirm('Delete this event?')) return;
-  await fbDb.ref('events/' + id).remove();
-  await fbDb.ref('chat/' + id).remove();
+async function saveEvent(){
+  const id=document.getElementById('ev-id').value;
+  const title=document.getElementById('ev-title').value.trim();
+  const date=document.getElementById('ev-date').value;
+  if(!title){document.getElementById('ev-err').textContent='Give it a title';return;}
+  if(!date){document.getElementById('ev-err').textContent='Pick a date';return;}
+  const data={title,date,time:document.getElementById('ev-time').value,location:document.getElementById('ev-location').value.trim(),desc:document.getElementById('ev-desc').value.trim(),groupId:document.getElementById('ev-group').value,privacy:document.getElementById('ev-privacy').value,type:document.getElementById('ev-type').value,creator:me.name,updated:Date.now()};
+  if(id)await db.ref('events/'+id).update(data);
+  else{data.rsvps={};data.created=Date.now();await db.ref('events').push().set(data);}
   closePanel('panel-event');
-  closePanel('panel-detail');
+}
+
+async function deleteEvent(){
+  const id=document.getElementById('ev-id').value;
+  if(!id||!confirm('Delete this event?'))return;
+  await db.ref('events/'+id).remove();
+  await db.ref('chat/'+id).remove();
+  closePanel('panel-event');closePanel('panel-detail');
 }
 
 /* ==============================================================
-   EVENT DETAIL (RSVP + CHAT)
+   EVENT DETAIL
    ============================================================== */
-function openDetail(eventId) {
-  detailEventId = eventId;
-  renderDetail(eventId);
-  openPanel('panel-detail');
-
-  // Chat listener
-  if (chatListener) chatListener();
-  chatListener = fbDb.ref('chat/' + eventId + '/messages').on('value', snap => {
-    const msgs = [];
-    snap.forEach(c => msgs.push(c.val()));
-    chatMessages[eventId] = msgs;
-    renderChat(eventId);
+function openDetail(eventId){
+  detailId=eventId;renderDetail(eventId);openPanel('panel-detail');
+  if(chatRef)db.ref('chat/'+chatRef+'/messages').off();
+  chatRef=eventId;
+  db.ref('chat/'+eventId+'/messages').on('value',s=>{
+    const msgs=[];s.forEach(c=>msgs.push(c.val()));chatMsgs[eventId]=msgs;renderChat(eventId);
   });
 }
 
-function renderDetail(eventId) {
-  const ev = allEvents[eventId];
-  if (!ev) return;
+function renderDetail(eid){
+  const ev=events[eid];if(!ev)return;
+  document.getElementById('detail-title').textContent=ev.title;
+  document.getElementById('detail-edit-btn').classList.toggle('hidden',ev.creator!==me.name);
+  const d=parseDate(ev.date), cr=users[ev.creator]||{};
+  let html=`<div style="font-size:14px;color:var(--text-dim)">${d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}${ev.time?' at '+ev.time:''}</div>`;
+  if(ev.location)html+=`<div style="font-size:14px;margin-top:4px">📍 ${esc(ev.location)}</div>`;
+  if(ev.desc)html+=`<div style="font-size:14px;color:var(--text-dim);margin-top:6px">${esc(ev.desc)}</div>`;
+  html+=`<div style="margin-top:8px;font-size:12px;color:var(--text-faint)">By <span style="color:${cr.color||'#888'};font-weight:600">${esc(ev.creator)}</span></div>`;
+  document.getElementById('detail-info').innerHTML=html;
 
-  document.getElementById('detail-title').textContent = ev.title;
-  document.getElementById('detail-edit-btn').classList.toggle('hidden', ev.creator !== currentUser.name);
-
-  const info = document.getElementById('detail-info');
-  const d = new Date(ev.date + 'T00:00:00');
-  let html = `<div style="font-size:14px;color:var(--text-dim);">${d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
-  if (ev.time) html += ` at ${ev.time}`;
-  html += '</div>';
-  if (ev.location) html += `<div style="font-size:14px;margin-top:4px;">📍 ${esc(ev.location)}</div>`;
-  if (ev.desc) html += `<div style="font-size:14px;color:var(--text-dim);margin-top:6px;">${esc(ev.desc)}</div>`;
-  const creator = allUsers[ev.creator] || {};
-  html += `<div style="margin-top:8px;font-size:12px;color:var(--text-faint);">Created by <span style="color:${creator.color||'#888'};font-weight:600;">${esc(ev.creator)}</span></div>`;
-  info.innerHTML = html;
-
-  // RSVP
-  const rsvpDiv = document.getElementById('detail-rsvp');
-  if (ev.type === 'plan') {
-    const rsvps = ev.rsvps || {};
-    const myRsvp = rsvps[currentUser.name] || null;
-    let rhtml = '<div class="rsvp-row">';
-    ['going','maybe','not'].forEach(status => {
-      const label = status === 'not' ? "Can't" : status.charAt(0).toUpperCase() + status.slice(1);
-      const active = myRsvp === status ? ` rsvp-${status}` : '';
-      rhtml += `<button class="rsvp-btn${active}" onclick="setRsvp('${eventId}','${status}')">${label}</button>`;
+  const rDiv=document.getElementById('detail-rsvp');
+  if(ev.type==='plan'){
+    const rsvps=ev.rsvps||{}, myR=rsvps[me.name]||null;
+    let r='<div class="rsvp-row">';
+    ['going','maybe','not'].forEach(st=>{
+      const lb=st==='not'?"Can't":st[0].toUpperCase()+st.slice(1);
+      r+=`<button class="rsvp-btn${myR===st?' rsvp-'+st:''}" onclick="setRsvp('${eid}','${st}')">${lb}</button>`;
     });
-    rhtml += '</div>';
-
-    if (Object.keys(rsvps).length > 0) {
-      rhtml += '<div style="margin:10px 0 8px;font-size:12px;color:var(--text-dim);">';
-      ['going','maybe','not'].forEach(status => {
-        const people = Object.entries(rsvps).filter(([,s]) => s === status).map(([n]) => n);
-        if (people.length > 0) {
-          const emoji = status === 'going' ? '✓' : status === 'maybe' ? '?' : '✕';
-          rhtml += `<div style="margin-bottom:4px;">${emoji} ${people.map(n => {
-            const u = allUsers[n] || {};
-            return `<span style="color:${u.color||'#888'};font-weight:500;">${esc(n)}</span>`;
-          }).join(', ')}</div>`;
-        }
+    r+='</div>';
+    if(Object.keys(rsvps).length){
+      r+='<div style="margin:8px 0;font-size:12px;color:var(--text-dim)">';
+      ['going','maybe','not'].forEach(st=>{
+        const p=Object.entries(rsvps).filter(([,s])=>s===st).map(([n])=>n);
+        if(p.length){const e=st==='going'?'✓':st==='maybe'?'?':'✕';r+=`<div style="margin-bottom:3px">${e} ${p.map(n=>`<span style="color:${(users[n]||{}).color||'#888'};font-weight:500">${esc(n)}</span>`).join(', ')}</div>`;}
       });
-      rhtml += '</div>';
+      r+='</div>';
     }
-    rsvpDiv.innerHTML = rhtml;
-    rsvpDiv.style.display = '';
-  } else {
-    rsvpDiv.style.display = 'none';
-  }
+    rDiv.innerHTML=r;rDiv.style.display='';
+  } else rDiv.style.display='none';
 }
 
-async function setRsvp(eventId, status) {
-  const ev = allEvents[eventId];
-  if (!ev) return;
-  const current = ev.rsvps ? ev.rsvps[currentUser.name] : null;
-  if (current === status) {
-    await fbDb.ref('events/' + eventId + '/rsvps/' + currentUser.name).remove();
-  } else {
-    await fbDb.ref('events/' + eventId + '/rsvps/' + currentUser.name).set(status);
-  }
+async function setRsvp(eid,st){
+  const ev=events[eid];if(!ev)return;
+  const cur=ev.rsvps?ev.rsvps[me.name]:null;
+  if(cur===st)await db.ref('events/'+eid+'/rsvps/'+me.name).remove();
+  else await db.ref('events/'+eid+'/rsvps/'+me.name).set(st);
 }
 
-function editFromDetail() {
-  const ev = allEvents[detailEventId];
-  if (!ev) return;
-  closePanel('panel-detail');
-  document.getElementById('panel-event-title').textContent = 'Edit Event';
-  document.getElementById('ev-id').value = ev.id;
-  document.getElementById('ev-title').value = ev.title;
-  document.getElementById('ev-date').value = ev.date;
-  document.getElementById('ev-time').value = ev.time || '';
-  document.getElementById('ev-location').value = ev.location || '';
-  document.getElementById('ev-desc').value = ev.desc || '';
-  document.getElementById('ev-privacy').value = ev.privacy || 'everyone';
-  document.getElementById('ev-type').value = ev.type || 'event';
-  document.getElementById('ev-err').textContent = '';
+function editFromDetail(){
+  const ev=events[detailId];if(!ev)return;closePanel('panel-detail');
+  document.getElementById('panel-event-title').textContent='Edit Event';
+  document.getElementById('ev-id').value=ev.id;
+  document.getElementById('ev-title').value=ev.title;
+  document.getElementById('ev-date').value=ev.date;
+  document.getElementById('ev-time').value=ev.time||'';
+  document.getElementById('ev-location').value=ev.location||'';
+  document.getElementById('ev-desc').value=ev.desc||'';
+  document.getElementById('ev-privacy').value=ev.privacy||'everyone';
+  document.getElementById('ev-type').value=ev.type||'event';
+  document.getElementById('ev-err').textContent='';
   document.getElementById('ev-delete-btn').classList.remove('hidden');
-  renderGroupOptions();
-  if (ev.groupId) document.getElementById('ev-group').value = ev.groupId;
+  renderGroupOpts();if(ev.groupId)document.getElementById('ev-group').value=ev.groupId;
   openPanel('panel-event');
 }
 
 /* ==============================================================
    CHAT
    ============================================================== */
-function renderChat(eventId) {
-  const container = document.getElementById('detail-chat');
-  const msgs = chatMessages[eventId] || [];
-  if (msgs.length === 0) {
-    container.innerHTML = '<div class="empty-state" style="padding:20px;"><p style="font-size:13px;">No messages yet</p></div>';
-    return;
-  }
-  container.innerHTML = '';
-  msgs.forEach(m => {
-    const div = document.createElement('div');
-    div.className = 'chat-msg';
-    const u = allUsers[m.author] || {};
-    const time = new Date(m.ts).toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit' });
-    div.innerHTML = `<div class="chat-msg-header"><span class="chat-msg-name" style="color:${u.color||'#888'}">${esc(m.author)}</span><span class="chat-msg-time">${time}</span></div><div class="chat-msg-text">${esc(m.text)}</div>`;
-    container.appendChild(div);
+function renderChat(eid){
+  const c=document.getElementById('detail-chat');
+  const msgs=chatMsgs[eid]||[];
+  if(!msgs.length){c.innerHTML='<div class="day-empty" style="padding:20px;font-size:13px">No messages yet</div>';return;}
+  c.innerHTML='';
+  msgs.forEach(m=>{
+    const div=document.createElement('div');div.className='chat-msg';
+    const u=users[m.author]||{};
+    div.innerHTML=`<div class="chat-msg-head"><span class="chat-msg-name" style="color:${u.color||'#888'}">${esc(m.author)}</span><span class="chat-msg-time">${new Date(m.ts).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</span></div><div class="chat-msg-text">${esc(m.text)}</div>`;
+    c.appendChild(div);
   });
-  container.scrollTop = container.scrollHeight;
+  c.scrollTop=c.scrollHeight;
 }
 
-async function sendChat() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text || !detailEventId) return;
-  input.value = '';
-  const msg = { author: currentUser.name, text, ts: Date.now() };
-  await fbDb.ref('chat/' + detailEventId + '/messages').push(msg);
-}
-
-/* ==============================================================
-   GROUPS
-   ============================================================== */
-function renderGroups() {
-  const container = document.getElementById('groups-list');
-  const groups = Object.values(allGroups);
-  if (groups.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>No groups yet</p></div>';
-    return;
-  }
-  container.innerHTML = '';
-  groups.forEach(g => {
-    const card = document.createElement('div');
-    card.className = 'group-card';
-    card.onclick = () => openEditGroup(g.id);
-
-    const name = document.createElement('div');
-    name.className = 'group-card-name';
-    name.textContent = g.name;
-    card.appendChild(name);
-
-    const meta = document.createElement('div');
-    meta.className = 'group-card-meta';
-    meta.textContent = g.members.length + ' member' + (g.members.length !== 1 ? 's' : '');
-    card.appendChild(meta);
-
-    const members = document.createElement('div');
-    members.className = 'group-members';
-    g.members.forEach(m => {
-      const chip = document.createElement('span');
-      chip.className = 'member-chip';
-      chip.style.background = (allUsers[m] || {}).color || '#555';
-      chip.textContent = m;
-      members.appendChild(chip);
-    });
-    card.appendChild(members);
-    container.appendChild(card);
-  });
-}
-
-function openNewGroup() {
-  document.getElementById('panel-group-title').textContent = 'New Group';
-  document.getElementById('grp-name').value = '';
-  document.getElementById('grp-err').textContent = '';
-  document.getElementById('panel-group')._editId = null;
-  renderGroupMemberCheckboxes([currentUser.name]);
-  openPanel('panel-group');
-}
-
-function openEditGroup(id) {
-  const g = allGroups[id];
-  if (!g) return;
-  document.getElementById('panel-group-title').textContent = 'Edit Group';
-  document.getElementById('grp-name').value = g.name;
-  document.getElementById('grp-err').textContent = '';
-  document.getElementById('panel-group')._editId = id;
-  renderGroupMemberCheckboxes(g.members);
-  openPanel('panel-group');
-}
-
-function renderGroupMemberCheckboxes(selected) {
-  const container = document.getElementById('grp-members');
-  container.innerHTML = '';
-  Object.values(allUsers).forEach(u => {
-    const row = document.createElement('div');
-    row.className = 'cf-row';
-    const checked = selected.includes(u.name);
-    row.innerHTML = `<span class="cf-row-name"><span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block;"></span> ${esc(u.name)}</span><button class="cf-check ${checked?'checked':''}" data-name="${esc(u.name)}" onclick="this.classList.toggle('checked')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>`;
-    container.appendChild(row);
-  });
-}
-
-async function saveGroup() {
-  const id = document.getElementById('panel-group')._editId;
-  const name = document.getElementById('grp-name').value.trim();
-  if (!name) { document.getElementById('grp-err').textContent = 'Enter a group name'; return; }
-
-  const checks = document.getElementById('grp-members').querySelectorAll('.cf-check');
-  const members = {};
-  let idx = 0;
-  checks.forEach(c => { if (c.classList.contains('checked')) { members[idx] = c.dataset.name; idx++; } });
-
-  if (idx === 0) { document.getElementById('grp-err').textContent = 'Add at least one member'; return; }
-
-  try {
-    if (id) {
-      await fbDb.ref('groups/' + id).update({ name, members });
-    } else {
-      await fbDb.ref('groups').push().set({ name, members, created: Date.now() });
-    }
-    closePanel('panel-group');
-  } catch(e) {
-    document.getElementById('grp-err').textContent = 'Error: ' + e.message;
-  }
+async function sendChat(){
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();if(!text||!detailId)return;input.value='';
+  await db.ref('chat/'+detailId+'/messages').push({author:me.name,text,ts:Date.now()});
 }
 
 /* ==============================================================
    SETTINGS
    ============================================================== */
-function openSettings() { openPanel('panel-settings'); renderCloseFriendsSettings(); }
+function openSettings(){openPanel('panel-settings');renderCF();}
 
-function renderCloseFriendsSettings() {
-  const container = document.getElementById('cf-settings-list');
-  container.innerHTML = '';
-  const cf = currentUser.closeFriends ? Object.values(currentUser.closeFriends) : [];
-  Object.values(allUsers).forEach(u => {
-    if (u.name === currentUser.name) return;
-    const row = document.createElement('div');
-    row.className = 'cf-row';
-    const isClose = cf.includes(u.name);
-    row.innerHTML = `<span class="cf-row-name"><span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block;"></span> ${esc(u.name)}</span><button class="cf-check ${isClose?'checked':''}" onclick="toggleCloseFriend('${esc(u.name)}', this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>`;
-    container.appendChild(row);
+function renderCF(){
+  const c=document.getElementById('cf-list');c.innerHTML='';
+  const cf=me.closeFriends?Object.values(me.closeFriends):[];
+  Object.values(users).forEach(u=>{
+    if(u.name===me.name)return;
+    const row=document.createElement('div');row.className='check-row';
+    row.innerHTML=`<span class="check-row-name"><span style="width:10px;height:10px;border-radius:50%;background:${u.color};display:inline-block"></span> ${esc(u.name)}</span><button class="check-box ${cf.includes(u.name)?'checked':''}" onclick="toggleCF('${esc(u.name)}',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+    c.appendChild(row);
   });
 }
 
-async function toggleCloseFriend(name, btn) {
-  let cf = currentUser.closeFriends ? Object.values(currentUser.closeFriends) : [];
-  const idx = cf.indexOf(name);
-  if (idx >= 0) { cf.splice(idx, 1); btn.classList.remove('checked'); }
-  else { cf.push(name); btn.classList.add('checked'); }
-  // Store as indexed object for Firebase
-  const cfObj = {};
-  cf.forEach((n, i) => { cfObj[i] = n; });
-  currentUser.closeFriends = cfObj;
-  await fbDb.ref('users/' + encodeKey(currentUser.name) + '/closeFriends').set(cfObj);
+async function toggleCF(name,btn){
+  let cf=me.closeFriends?Object.values(me.closeFriends):[];
+  const i=cf.indexOf(name);if(i>=0){cf.splice(i,1);btn.classList.remove('checked');}else{cf.push(name);btn.classList.add('checked');}
+  const obj={};cf.forEach((n,i)=>{obj[i]=n;});me.closeFriends=obj;
+  await db.ref('users/'+encKey(me.name)+'/closeFriends').set(obj);
 }
 
-function toggleTheme() {
-  const btn = document.getElementById('theme-toggle');
-  const isDark = btn.classList.contains('on');
-  if (isDark) {
-    document.documentElement.setAttribute('data-theme', 'light');
-    btn.classList.remove('on');
-    localStorage.setItem('cmas-theme', 'light');
-  } else {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    btn.classList.add('on');
-    localStorage.setItem('cmas-theme', 'dark');
-  }
+function toggleTheme(){
+  const btn=document.getElementById('theme-toggle');
+  if(btn.classList.contains('on')){document.documentElement.setAttribute('data-theme','light');btn.classList.remove('on');localStorage.setItem('cmas-theme','light');}
+  else{document.documentElement.setAttribute('data-theme','dark');btn.classList.add('on');localStorage.setItem('cmas-theme','dark');}
 }
 
 /* ==============================================================
-   PANEL HELPERS
+   PANELS
    ============================================================== */
-function openPanel(id) { document.getElementById(id).classList.add('open'); }
-function closePanel(id) {
+function openPanel(id){document.getElementById(id).classList.add('open');}
+function closePanel(id){
   document.getElementById(id).classList.remove('open');
-  if (id === 'panel-detail' && chatListener) {
-    fbDb.ref('chat/' + detailEventId + '/messages').off('value', chatListener);
-    chatListener = null;
-  }
+  if(id==='panel-detail'&&chatRef){db.ref('chat/'+chatRef+'/messages').off();chatRef=null;}
 }
-
-/* ==============================================================
-   UTILITY
-   ============================================================== */
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 /* ==============================================================
    BOOT
