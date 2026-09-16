@@ -845,6 +845,7 @@ input,select,textarea,button{font-family:var(--font)}
     <div class="panel-header">
       <div class="panel-title" id="detail-title">Event</div>
       <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-secondary hidden" id="detail-away-btn" onclick="convertEventToAway(detailId)">→ Away</button>
         <button class="btn-icon" id="detail-edit-btn" onclick="editFromDetail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
         <button class="btn-icon" onclick="closePanel('panel-detail')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
@@ -992,7 +993,7 @@ input,select,textarea,button{font-family:var(--font)}
       <div id="away-list"></div>
       <div style="margin-top:22px">
         <div class="settings-heading">Convert an event</div>
-        <p style="font-size:12px;color:var(--text-faint);margin-bottom:8px">Made an event just to show you're unavailable? Move it across.</p>
+        <p id="convert-label" style="font-size:12px;color:var(--text-faint);margin-bottom:8px">Made an event just to show you're unavailable? Move it across.</p>
         <div id="convert-list"></div>
       </div>
     
@@ -2238,18 +2239,26 @@ function openAwayPanel(){
   openPanel('panel-away');
 }
 
-/* Your own upcoming events, offered for one-tap conversion to away */
+/* Upcoming events offered for one-tap conversion to away.
+   Admins see everyone's; everyone else sees only their own. */
 function renderConvertList(){
   const c=document.getElementById('convert-list');
   if(!c)return;
   const today=todayStr();
-  const mine=Object.values(events)
-    .filter(e=>e.creator===me.name&&(e.endDate||e.date)>=today)
+  const admin=isAdmin();
+  const list=Object.values(events)
+    .filter(e=>(admin||e.creator===me.name)&&(e.endDate||e.date)>=today)
     .sort((a,b)=>a.date>b.date?1:-1)
-    .slice(0,12);
-  if(!mine.length){c.innerHTML='<div class="day-empty" style="padding:16px;font-size:13px">No upcoming events of yours</div>';return;}
+    .slice(0,20);
+
+  const label=document.getElementById('convert-label');
+  if(label)label.textContent=admin
+    ? "Anyone's event that's really an away block. It'll be filed under whoever created it."
+    : "Made an event just to show you're unavailable? Move it across.";
+
+  if(!list.length){c.innerHTML='<div class="day-empty" style="padding:16px;font-size:13px">No upcoming events</div>';return;}
   c.innerHTML='';
-  mine.forEach(ev=>{
+  list.forEach(ev=>{
     const row=document.createElement('div');row.className='away-item';
     const d=parseDate(ev.date);
     let when=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
@@ -2257,34 +2266,46 @@ function renderConvertList(){
       const e=parseDate(ev.endDate);
       when+=' → '+e.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
     }
-    row.innerHTML=`<div class="away-item-info"><div class="away-item-when">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="away-item-detail">${when}</div></div><button class="btn btn-sm btn-secondary" onclick="convertEventToAway('${ev.id}')">→ Away</button>`;
+    const cr=users[ev.creator]||{};
+    const byline=(admin&&ev.creator!==me.name)
+      ? ` · <span style="color:${cr.color||'#888'};font-weight:600">${esc(ev.creator)}</span>`
+      : '';
+    row.innerHTML=`<div class="away-item-info"><div class="away-item-when">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="away-item-detail">${when}${byline}</div></div><button class="btn btn-sm btn-secondary" onclick="convertEventToAway('${ev.id}')">→ Away</button>`;
     c.appendChild(row);
   });
 }
 
 async function convertEventToAway(id){
   const ev=events[id];if(!ev)return;
-  if(ev.creator!==me.name){toast('Only the creator can convert this');return;}
+  const isMine=ev.creator===me.name;
+  if(!isMine&&!isAdmin()){toast('Only the creator or an admin can convert this');return;}
+
   const hasChat=chatMsgs[id]&&chatMsgs[id].length;
   const rsvpCount=ev.rsvps?Object.keys(ev.rsvps).length:0;
-  let msg='Convert "'+ev.title+'" to an away block?';
+  let msg=isMine
+    ? 'Convert "'+ev.title+'" to an away block?'
+    : 'Convert '+ev.creator+'\'s event "'+ev.title+'" to an away block for them?';
   if(rsvpCount||hasChat)msg+=' Its RSVPs and chat will be lost.';
   const ok=await appConfirm(msg,{okText:'Convert'});
   if(!ok)return;
 
   await db.ref('away').push().set({
-    person:me.name,
+    // Always belongs to whoever created the event, not whoever converted it
+    person:ev.creator,
     date:ev.date,
     endDate:ev.endDate||'',
     part:'all',
     repeat:ev.repeat||'none',
     reason:ev.title,
+    convertedBy:isMine?null:me.name,
     created:Date.now(),updated:Date.now()
   });
   await db.ref('events/'+id).remove();
   await db.ref('chat/'+id).remove();
-  buzz();toast('Converted to away');
+  buzz();
+  toast(isMine?'Converted to away':'Converted for '+ev.creator);
   renderConvertList();
+  closePanel('panel-detail');
 }
 
 
@@ -2324,6 +2345,7 @@ function renderAwayList(){
     if(a.part&&a.part!=='all')bits.push(a.part==='am'?'Morning':'Afternoon');
     if(a.repeat&&a.repeat!=='none')bits.push('🔁 '+a.repeat);
     if(a.reason)bits.push(esc(a.reason));
+    if(a.convertedBy)bits.push('<span style="color:var(--text-faint)">set by '+esc(a.convertedBy)+'</span>');
     row.innerHTML=`<div class="away-item-info"><div class="away-item-when">${awayLabel(a)}</div><div class="away-item-detail">${bits.join(' · ')||'All day'}</div></div><button class="btn btn-sm btn-secondary" onclick="editAwayInPanel('${a.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteAway('${a.id}')">✕</button>`;
     c.appendChild(row);
   });
@@ -2515,18 +2537,25 @@ async function saveEvent(){
     };
 
     if(existingAwayId){
+      // Never reassign ownership on an edit
+      const existing=away[existingAwayId];
+      if(existing)data.person=existing.person;
+      if(existing&&existing.person!==me.name&&!isAdmin()){err.textContent='You can only edit your own away blocks';return;}
       await db.ref('away/'+existingAwayId).update(data);
       toast('Updated');
     } else if(existingEventId){
       // Converting an existing event into an away block
       const ev=events[existingEventId];
-      if(ev&&ev.creator!==me.name){err.textContent='You can only convert your own events';return;}
+      if(ev&&ev.creator!==me.name&&!isAdmin()){err.textContent='You can only convert your own events';return;}
+      // The away block belongs to whoever created the event, not whoever converted it
+      if(ev)data.person=ev.creator;
+      if(ev&&ev.creator!==me.name)data.convertedBy=me.name;
       if(!data.reason&&ev)data.reason=ev.title;
       data.created=Date.now();
       await db.ref('away').push().set(data);
       await db.ref('events/'+existingEventId).remove();
       await db.ref('chat/'+existingEventId).remove();
-      toast('Converted to away');
+      toast(ev&&ev.creator!==me.name?'Converted for '+ev.creator:'Converted to away');
     } else {
       data.created=Date.now();
       await db.ref('away').push().set(data);
@@ -2558,6 +2587,10 @@ async function saveEvent(){
   }
 
   if(existingEventId){
+    const existing=events[existingEventId];
+    if(existing&&existing.creator!==me.name&&!isAdmin()){err.textContent='You can only edit your own events';return;}
+    // Don't reassign the creator when an admin edits someone else's event
+    if(existing)data.creator=existing.creator;
     await db.ref('events/'+existingEventId).update(data);
     toast('Updated');
   } else {
@@ -2685,7 +2718,9 @@ function attachChatListener(eventId){
 function renderDetail(eid){
   const ev=events[eid];if(!ev)return;
   document.getElementById('detail-title').textContent=ev.title;
-  document.getElementById('detail-edit-btn').classList.toggle('hidden',ev.creator!==me.name);
+  const canManage=ev.creator===me.name||isAdmin();
+  document.getElementById('detail-edit-btn').classList.toggle('hidden',!canManage);
+  document.getElementById('detail-away-btn').classList.toggle('hidden',!canManage);
   const d=parseDate(ev.date), cr=users[ev.creator]||{};
   let html;
   if(isMultiDay(ev)){
@@ -3529,14 +3564,14 @@ function attachSwipe(el,eventId){
     if(curX<-70){
       buzz(20);
       const ev=events[eventId];
-      if(ev&&ev.creator===me.name){
+      if(ev&&(ev.creator===me.name||isAdmin())){
         fg.style.transform='translateX(-100%)';
         const yes=await appConfirm('Delete "'+ev.title+'"?',{okText:'Delete',danger:true});
         if(yes){await db.ref('events/'+eventId).remove();await db.ref('chat/'+eventId).remove();toast('Deleted');}
         else fg.style.transform='translateX(0)';
       } else {
         fg.style.transform='translateX(0)';
-        toast('Only the creator can delete this');
+        toast('Only the creator or an admin can delete this');
       }
     } else {
       fg.style.transform='translateX(0)';
