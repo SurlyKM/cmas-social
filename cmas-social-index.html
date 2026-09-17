@@ -467,6 +467,10 @@ input,select,textarea,button{font-family:var(--font)}
 .past-chip{font-size:10px;padding:2px 7px;border-radius:9px;background:var(--surface-3);color:var(--text-faint);font-weight:600}
 .search-group{font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;padding:10px 4px 6px}
 
+.section-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:5px;border-radius:8px;background:var(--danger);color:#fff;font:700 10px var(--font);vertical-align:1px}
+.poll-card.is-new{border-left:3px solid var(--danger)}
+.poll-new-chip{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--danger-dim);color:var(--danger);font-weight:700;margin-left:6px}
+
 /* Unread chat indicators */
 .tab-btn{position:relative}
 .tab-badge{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--danger);color:#fff;font:700 10px var(--font);display:flex;align-items:center;justify-content:center;line-height:1}
@@ -719,7 +723,7 @@ input,select,textarea,button{font-family:var(--font)}
       </div>
       <div class="section-tabs">
         <button class="section-tab active" data-section="plans" onclick="switchPlanSection('plans')">Plans</button>
-        <button class="section-tab" data-section="polls" onclick="switchPlanSection('polls')">Polls</button>
+        <button class="section-tab" data-section="polls" onclick="switchPlanSection('polls')">Polls<span class="section-badge hidden" id="polls-badge"></span></button>
         <button class="section-tab" data-section="wheel" onclick="switchPlanSection('wheel')">Wheel</button>
       </div>
       <div id="plans-section-plans" style="flex:1;overflow-y:auto;padding:0 12px 80px">
@@ -872,6 +876,7 @@ input,select,textarea,button{font-family:var(--font)}
     <div class="panel-header">
       <div class="panel-title" id="detail-title">Event</div>
       <div style="display:flex;gap:6px">
+        <button class="btn-icon" onclick="shareItem('e',detailId)" title="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
         <button class="btn btn-sm btn-secondary hidden" id="detail-away-btn" onclick="convertEventToAway(detailId)">→ Away</button>
         <button class="btn-icon" id="detail-edit-btn" onclick="editFromDetail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
         <button class="btn-icon" onclick="closePanel('panel-detail')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -956,6 +961,7 @@ input,select,textarea,button{font-family:var(--font)}
     <div class="panel-header">
       <div class="panel-title" id="poll-detail-title">Poll</div>
       <div style="display:flex;gap:6px">
+        <button class="btn-icon" onclick="shareItem('p',activePollId)" title="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
         <button class="btn btn-sm btn-secondary" id="poll-lock-btn" onclick="lockPoll()">Lock winner</button>
         <button class="btn-icon" id="poll-del-btn2" onclick="deletePoll2()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         <button class="btn-icon" onclick="closePanel('panel-poll-detail')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -1208,6 +1214,95 @@ input,select,textarea,button{font-family:var(--font)}
 </style>
 
 <script>
+/* ==============================================================
+   SHARE LINKS & DEEP LINKING
+   A link looks like  https://…/#e=<eventId>  or  #p=<pollId>
+   The recipient still needs the access code and an account; the
+   link just drops them straight onto the right thing once they're in.
+   ============================================================== */
+let pendingDeepLink=null;
+
+function captureDeepLink(){
+  const h=(location.hash||'').replace(/^#/,'');
+  if(!h)return;
+  const m=h.match(/^([ep])=(.+)$/);
+  if(m)pendingDeepLink={type:m[1],id:decodeURIComponent(m[2])};
+  // Tidy the URL so a refresh doesn't keep reopening it
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+}
+
+function applyDeepLink(){
+  if(!pendingDeepLink)return;
+  const {type,id}=pendingDeepLink;
+  pendingDeepLink=null;
+  setTimeout(()=>{
+    if(type==='e'){
+      const ev=events[id];
+      if(!ev){toast('That event no longer exists');return;}
+      selDate=ev.date;
+      viewWeekStart=getWeekStart(parseDate(ev.date));
+      switchTab('calendar');
+      openDetail(id);
+    } else if(type==='p'){
+      if(!polls[id]){toast('That poll no longer exists');return;}
+      switchTab('plans');
+      switchPlanSection('polls');
+      openPollDetail(id);
+    }
+  },700); // let the first data snapshot land
+}
+
+function shareUrl(type,id){
+  return location.origin+location.pathname+'#'+type+'='+encodeURIComponent(id);
+}
+
+async function shareItem(type,id){
+  const url=shareUrl(type,id);
+  let title='CMAS Social',text='';
+  if(type==='e'){
+    const ev=events[id];if(!ev)return;
+    const d=parseDate(ev.date);
+    title=ev.title;
+    text=ev.title+' — '+d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})
+        +(ev.time?' at '+ev.time:'')+(ev.location?' · '+ev.location:'');
+  } else {
+    const p=polls[id];if(!p)return;
+    title=p.title;
+    text=(p.type==='date'?'Date poll: ':'Poll: ')+p.title;
+  }
+
+  // Native share sheet where it exists (Messenger, WhatsApp, etc)
+  if(navigator.share){
+    try{
+      await navigator.share({title,text,url});
+      buzz();
+      return;
+    }catch(e){
+      if(e&&e.name==='AbortError')return;   // user dismissed the sheet
+    }
+  }
+  copyToClipboard(text+'\n'+url);
+}
+
+async function copyToClipboard(str){
+  try{
+    await navigator.clipboard.writeText(str);
+    buzz();toast('Link copied');
+    return;
+  }catch(e){}
+  // Fallback for browsers without the clipboard API
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=str;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    buzz();toast('Link copied');
+  }catch(e){
+    toast('Could not copy');
+  }
+}
+
 /* ==============================================================
    TOAST & HAPTICS
    ============================================================== */
@@ -1580,6 +1675,7 @@ function generateCode() {
    INIT
    ============================================================== */
 function init() {
+  captureDeepLink();
   if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
     document.getElementById('loading').innerHTML = '<div style="max-width:340px"><div style="font-size:18px;font-weight:700;margin-bottom:6px">Setup needed</div><div style="color:var(--text-dim);font-size:13px">Open index.html and replace the FIREBASE_CONFIG values with your Firebase project credentials. See README.md for the walkthrough.</div></div>';
     return;
@@ -1792,7 +1888,17 @@ function startApp() {
     s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];next[c.key]={id:c.key,...v};});
     groups=next;renderGroups();renderGroupOpts();
   });
-  db.ref('polls').on('value',s=>{polls={};s.forEach(c=>{polls[c.key]={id:c.key,...c.val()};});renderPolls();if(activePollId&&polls[activePollId])renderPollDetail(activePollId);});
+  db.ref('polls').on('value',s=>{
+    polls={};s.forEach(c=>{polls[c.key]={id:c.key,...c.val()};});
+    // First run on this device: treat everything already there as seen,
+    // otherwise the whole back catalogue lights up as new
+    if(localStorage.getItem('cmas-seenpolls')===null){
+      markAllPollsSeen();
+    }
+    renderPolls();
+    renderUnreadBadges();
+    if(activePollId&&polls[activePollId])renderPollDetail(activePollId);
+  });
   db.ref('wheels').on('value',s=>{
     wheels={};s.forEach(c=>{wheels[c.key]={id:c.key,...c.val()};});
     renderWheelSection();
@@ -1817,6 +1923,7 @@ function startApp() {
   attachChatMetaListener();
   setAvailView(availView);
   renderAll();
+  applyDeepLink();
   // Give the listeners a moment to settle before sweeping
   setTimeout(runRetentionSweep,4000);
 }
@@ -2499,13 +2606,38 @@ function renderAwayList(){
    ============================================================== */
 let chatMeta={};          // eventId -> {count, lastTs, lastAuthor}
 let lastRead={};          // eventId -> timestamp we last viewed
+let seenPolls={};         // pollId -> timestamp we first saw it
 
 function loadLastRead(){
   try{ lastRead=JSON.parse(localStorage.getItem('cmas-lastread')||'{}'); }
   catch(e){ lastRead={}; }
+  try{ seenPolls=JSON.parse(localStorage.getItem('cmas-seenpolls')||'{}'); }
+  catch(e){ seenPolls={}; }
 }
 function saveLastRead(){
   try{ localStorage.setItem('cmas-lastread',JSON.stringify(lastRead)); }catch(e){}
+}
+function saveSeenPolls(){
+  try{ localStorage.setItem('cmas-seenpolls',JSON.stringify(seenPolls)); }catch(e){}
+}
+
+/* Polls created since we last looked, excluding our own */
+function newPolls(){
+  return Object.values(polls)
+    .filter(p=>p.creator!==me.name&&!seenPolls[p.id])
+    .sort((a,b)=>(b.created||0)-(a.created||0));
+}
+
+function markPollSeen(pollId){
+  if(seenPolls[pollId])return;
+  seenPolls[pollId]=Date.now();
+  saveSeenPolls();
+  renderUnreadBadges();
+}
+
+function markAllPollsSeen(){
+  Object.values(polls).forEach(p=>{ seenPolls[p.id]=Date.now(); });
+  saveSeenPolls();
 }
 
 /* Number of messages in this thread newer than our last read,
@@ -2526,7 +2658,7 @@ function unreadThreads(){
     .sort((a,b)=>(b.meta.lastTs||0)-(a.meta.lastTs||0));
 }
 
-function totalUnread(){ return unreadThreads().length; }
+function totalUnread(){ return unreadThreads().length + newPolls().length; }
 
 function markRead(eventId){
   const m=chatMeta[eventId];
@@ -2544,31 +2676,52 @@ function markAllRead(){
     lastRead[x.ev.id]=Math.max(m&&m.lastTs?m.lastTs:0,Date.now());
   });
   saveLastRead();
+  markAllPollsSeen();
   buzz();
   renderUnreadBadges();
   closePanel('panel-unread');
 }
 
 function openUnreadPanel(){
-  const list=unreadThreads();
+  const threads=unreadThreads();
+  const fresh=newPolls();
   const c=document.getElementById('unread-list');
-  if(!list.length){
+  if(!threads.length&&!fresh.length){
     c.innerHTML='<div class="day-empty">Nothing new right now</div>';
-  } else {
-    c.innerHTML='';
-    list.forEach(({ev,n,meta})=>{
+    openPanel('panel-unread');
+    return;
+  }
+  c.innerHTML='';
+
+  if(fresh.length){
+    const h=document.createElement('div');
+    h.className='search-group';h.textContent='New polls';
+    c.appendChild(h);
+    fresh.forEach(p=>{
       const row=document.createElement('div');
-      row.className='away-item';
-      row.style.cursor='pointer';
-      const cr=users[ev.creator]||{};
+      row.className='away-item';row.style.cursor='pointer';
+      const opts=p.options?Object.values(p.options).length:0;
+      row.innerHTML=`<div class="unread-dot"></div><div class="away-item-info"><div class="away-item-when">${p.type==='date'?'📅':'📊'} ${esc(p.title)}</div><div class="away-item-detail">${opts} options · by ${esc(p.creator)} · ${timeAgo(p.created)}</div></div>`;
+      row.onclick=()=>{closePanel('panel-unread');switchTab('plans');switchPlanSection('polls');openPollDetail(p.id);};
+      c.appendChild(row);
+    });
+  }
+
+  if(threads.length){
+    const h=document.createElement('div');
+    h.className='search-group';h.textContent='New messages';
+    c.appendChild(h);
+    threads.forEach(({ev,n,meta})=>{
+      const row=document.createElement('div');
+      row.className='away-item';row.style.cursor='pointer';
       const d=parseDate(ev.date);
       const when=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
-      const ago=timeAgo(meta.lastTs);
-      row.innerHTML=`<div class="unread-dot"></div><div class="away-item-info"><div class="away-item-when">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="away-item-detail">${when} · <span style="color:var(--danger);font-weight:600">${n} new</span> from ${esc(meta.newest)} · ${ago}</div></div>`;
+      row.innerHTML=`<div class="unread-dot"></div><div class="away-item-info"><div class="away-item-when">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="away-item-detail">${when} · <span style="color:var(--danger);font-weight:600">${n} new</span> from ${esc(meta.newest)} · ${timeAgo(meta.lastTs)}</div></div>`;
       row.onclick=()=>{closePanel('panel-unread');openDetail(ev.id);};
       c.appendChild(row);
     });
   }
+
   openPanel('panel-unread');
 }
 
@@ -2634,6 +2787,14 @@ function renderUnreadBadges(){
     badge.classList.toggle('hidden',planUnread===0);
   }
 
+  // Polls sub-tab badge
+  const pb=document.getElementById('polls-badge');
+  if(pb){
+    const np=newPolls().length;
+    pb.textContent=np>9?'9+':String(np);
+    pb.classList.toggle('hidden',np===0);
+  }
+
   // Keep the unread list fresh if it's open
   if(document.getElementById('panel-unread').classList.contains('open'))openUnreadPanel();
 
@@ -2641,7 +2802,7 @@ function renderUnreadBadges(){
   // Skip while a thread is open: the cards are hidden behind the panel anyway.
   if(document.getElementById('panel-detail').classList.contains('open'))return;
   if(activeTab==='calendar')renderWeek();
-  if(activeTab==='plans')renderPlans();
+  if(activeTab==='plans'){renderPlans();renderPolls();}
 }
 
 /* ==============================================================
@@ -3375,7 +3536,9 @@ function renderPolls(){
   if(!pl.length){c.innerHTML='<div class="day-empty">No polls yet. Create one to find the best date or option.</div>';return;}
   c.innerHTML='';
   pl.forEach(p=>{
-    const card=document.createElement('div');card.className='poll-card';
+    const card=document.createElement('div');
+    const isNew=p.creator!==me.name&&!seenPolls[p.id];
+    card.className='poll-card'+(isNew?' is-new':'');
     card.onclick=()=>openPollDetail(p.id);
     const opts=p.options?Object.values(p.options):[];
     const voteCount=p.votes?Object.keys(p.votes).length:0;
@@ -3384,7 +3547,7 @@ function renderPolls(){
       const winOpt=opts[p.lockedOption];
       locked=`<div class="poll-locked">✓ Locked: ${esc(winOpt?winOpt.label:'')}</div>`;
     }
-    card.innerHTML=`<span class="poll-card-type ${p.type}">${p.type==='date'?'📅 Date Poll':'📊 Poll'}</span><div class="poll-card-title">${esc(p.title)}</div><div class="poll-card-meta">${opts.length} options · ${voteCount} voted · by ${esc(p.creator)}</div>${locked}`;
+    card.innerHTML=`<span class="poll-card-type ${p.type}">${p.type==='date'?'📅 Date Poll':'📊 Poll'}</span>${isNew?'<span class="poll-new-chip">NEW</span>':''}<div class="poll-card-title">${esc(p.title)}</div><div class="poll-card-meta">${opts.length} options · ${voteCount} voted · by ${esc(p.creator)}</div>${locked}`;
     c.appendChild(card);
   });
 }
@@ -3393,7 +3556,7 @@ function renderPolls(){
    POLL DETAIL (Doodle Grid)
    ============================================================== */
 function openPollDetail(id){
-  activePollId=id;renderPollDetail(id);openPanel('panel-poll-detail');
+  activePollId=id;markPollSeen(id);renderPollDetail(id);openPanel('panel-poll-detail');
 }
 
 function renderPollDetail(id){
