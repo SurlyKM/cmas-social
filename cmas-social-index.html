@@ -461,6 +461,16 @@ input,select,textarea,button{font-family:var(--font)}
 .wheelpick-row{display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .wheelpick-row:active{background:var(--surface-3)}
 
+/* Unread chat indicators */
+.tab-btn{position:relative}
+.tab-badge{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--danger);color:#fff;font:700 10px var(--font);display:flex;align-items:center;justify-content:center;line-height:1}
+.unread-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0;animation:unreadPulse 2s ease-in-out infinite}
+@keyframes unreadPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.82)}}
+.unread-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--danger-dim);color:var(--danger)}
+.ev-card.has-unread{border-left:3px solid var(--danger)}
+.chat-new-line{display:flex;align-items:center;gap:8px;margin:12px 0 8px;color:var(--danger);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.chat-new-line::before,.chat-new-line::after{content:'';flex:1;height:1px;background:var(--danger);opacity:.4}
+
 /* Mode switch (Event / Plan / Away) */
 .mode-switch{display:flex;gap:4px;background:var(--surface-2);border-radius:var(--radius);padding:4px;margin-bottom:6px}
 .mode-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:none;border-radius:9px;background:none;color:var(--text-dim);font:600 12px var(--font);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
@@ -701,6 +711,10 @@ input,select,textarea,button{font-family:var(--font)}
         <button class="section-tab" data-section="wheel" onclick="switchPlanSection('wheel')">Wheel</button>
       </div>
       <div id="plans-section-plans" style="flex:1;overflow-y:auto;padding:0 12px 80px">
+        <div class="view-toggle" style="margin-bottom:10px">
+          <button class="view-toggle-btn active" data-when="upcoming" onclick="setPlanWhen('upcoming')">Upcoming</button>
+          <button class="view-toggle-btn" data-when="past" onclick="setPlanWhen('past')">Past</button>
+        </div>
         <div id="plans-list"></div>
       </div>
       <div id="plans-section-polls" class="hidden" style="flex:1;overflow-y:auto;padding:0 12px 80px">
@@ -1091,6 +1105,12 @@ input,select,textarea,button{font-family:var(--font)}
         <div class="settings-row"><span>Access code</span><span id="s-code" style="font-family:monospace;letter-spacing:.04em"></span></div>
         <div class="settings-row"><span>Recovery code</span><button class="btn btn-sm btn-secondary" onclick="resetOwnCode()">Reset my code</button></div>
         <div class="settings-row" style="border-bottom:none"><span>Session</span><button class="btn btn-sm btn-danger" onclick="signOut()">Sign out</button></div>
+      </div>
+      <div class="settings-section" id="s-retention-section">
+        <div class="settings-heading">Housekeeping</div>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Old events, plans, away blocks and their chat threads are deleted automatically once they're this old. This can't be undone.</p>
+        <div class="repeat-pills" id="s-retention-pills"></div>
+        <p id="s-retention-note" style="font-size:12px;color:var(--text-faint);margin-top:8px"></p>
       </div>
       <div class="settings-section" id="s-members-section">
         <div class="settings-heading">Members <span id="s-member-count" style="font-weight:400;text-transform:none;letter-spacing:0"></span></div>
@@ -1755,9 +1775,20 @@ function startApp() {
     if(document.getElementById('panel-away').classList.contains('open'))renderAwayList();
   });
 
+  db.ref('config').on('value',s=>{
+    if(s.exists()){
+      appCfg=s.val();
+      if(document.getElementById('panel-settings').classList.contains('open'))renderRetention();
+    }
+  });
+
   setupPresence();
+  loadLastRead();
+  attachChatMetaListener();
   setAvailView(availView);
   renderAll();
+  // Give the listeners a moment to settle before sweeping
+  setTimeout(runRetentionSweep,4000);
 }
 
 function renderHeaderAvatar(){
@@ -1996,6 +2027,14 @@ function buildEventCard(ev,showDate,onDate){
   if(ev.repeat&&ev.repeat!=='none')badges+=`<span class="ev-badge" style="background:var(--surface-3);color:var(--text-dim)">🔁 ${ev.repeat}</span>`;
   if(ev.wheelResult&&ev.wheelResult.result)badges+=`<span class="ev-badge" style="background:var(--primary-dim);color:var(--primary)">🎡 ${esc(ev.wheelResult.result)}</span>`;
 
+  const unread=unreadCount(ev.id);
+  const meta_=chatMeta[ev.id];
+  if(unread>0){
+    badges+=`<span class="unread-chip">💬 ${unread} new${meta_&&meta_.newest?' from '+esc(meta_.newest):''}</span>`;
+  } else if(meta_&&meta_.count){
+    badges+=`<span class="ev-badge" style="background:var(--surface-3);color:var(--text-faint)">💬 ${meta_.count}</span>`;
+  }
+
   let meta='';
   if(showDate){
     const d=parseDate(ev.date);
@@ -2010,7 +2049,7 @@ function buildEventCard(ev,showDate,onDate){
   }
   if(ev.location)meta+=' · '+esc(ev.location);
 
-  wrap.innerHTML=`<div class="ev-swipe-bg">Delete</div><div class="ev-swipe-fg"><div class="ev-card" style="margin-bottom:0;border:none"><div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="ev-meta">${meta}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div></div></div>`;
+  wrap.innerHTML=`<div class="ev-swipe-bg">Delete</div><div class="ev-swipe-fg"><div class="ev-card${unread>0?' has-unread':''}" style="margin-bottom:0;border:none"><div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="ev-meta">${meta}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div>${unread>0?'<div class="unread-dot" style="align-self:center"></div>':''}</div></div>`;
   attachSwipe(wrap,ev.id);
   return wrap;
 }
@@ -2421,14 +2460,215 @@ function renderAwayList(){
 }
 
 /* ==============================================================
+   UNREAD CHAT TRACKING
+   Keeps a lightweight index of every thread's latest message so we
+   can badge events without opening each chat.
+   ============================================================== */
+let chatMeta={};          // eventId -> {count, lastTs, lastAuthor}
+let lastRead={};          // eventId -> timestamp we last viewed
+
+function loadLastRead(){
+  try{ lastRead=JSON.parse(localStorage.getItem('cmas-lastread')||'{}'); }
+  catch(e){ lastRead={}; }
+}
+function saveLastRead(){
+  try{ localStorage.setItem('cmas-lastread',JSON.stringify(lastRead)); }catch(e){}
+}
+
+/* Number of messages in this thread newer than our last read,
+   ignoring our own messages. */
+function unreadCount(eventId){
+  const m=chatMeta[eventId];
+  if(!m||!m.lastTs)return 0;
+  const seen=lastRead[eventId]||0;
+  if(m.lastTs<=seen)return 0;
+  return m.newerThan(seen);
+}
+
+function totalUnread(){
+  let n=0;
+  visibleEvents().forEach(ev=>{ if(unreadCount(ev.id)>0)n++; });
+  return n;
+}
+
+function markRead(eventId){
+  const m=chatMeta[eventId];
+  const ts=m&&m.lastTs?m.lastTs:Date.now();
+  if((lastRead[eventId]||0)>=ts)return;   // nothing changed, skip the repaint
+  lastRead[eventId]=ts;
+  saveLastRead();
+  renderUnreadBadges();
+}
+
+function attachChatMetaListener(){
+  db.ref('chat').on('value',snap=>{
+    const next={};
+    snap.forEach(evNode=>{
+      const msgs=evNode.child('messages');
+      let count=0,lastTs=0,newest='';
+      const times=[];
+      msgs.forEach(m=>{
+        const v=m.val();
+        if(!v||!v.ts)return;
+        count++;times.push({ts:v.ts,author:v.author});
+        if(v.ts>lastTs){lastTs=v.ts;newest=v.author;}
+      });
+      if(count){
+        next[evNode.key]={
+          count,lastTs,newest,
+          newerThan:seen=>times.filter(t=>t.ts>seen&&t.author!==me.name).length
+        };
+      }
+    });
+    chatMeta=next;
+    renderUnreadBadges();
+  });
+}
+
+/* Repaint anything that shows an unread state */
+function renderUnreadBadges(){
+  // Tab bar badge
+  const n=totalUnread();
+  let badge=document.getElementById('plans-unread');
+  const tab=document.querySelector('.tab-btn[data-tab="plans"]');
+  if(tab){
+    if(!badge){
+      badge=document.createElement('span');
+      badge.id='plans-unread';
+      badge.className='tab-badge';
+      tab.appendChild(badge);
+    }
+    badge.textContent=n>9?'9+':String(n);
+    badge.classList.toggle('hidden',n===0);
+  }
+  // Cards carry their own badge, so redraw the lists.
+  // Skip while a thread is open: the cards are hidden behind the panel anyway.
+  if(document.getElementById('panel-detail').classList.contains('open'))return;
+  if(activeTab==='calendar')renderWeek();
+  if(activeTab==='plans')renderPlans();
+}
+
+/* ==============================================================
+   RETENTION — automatic cleanup of old records
+   There's no server, so this runs client-side on app start.
+   Deletes are idempotent, so several devices doing it at once is fine.
+   ============================================================== */
+const DEFAULT_RETENTION=90;                 // days
+const RETENTION_CHOICES=[30,90,180,365,0];  // 0 = never
+const SWEEP_INTERVAL=12*60*60*1000;         // at most twice a day per device
+
+function retentionDays(){
+  const d=appCfg&&appCfg.retentionDays;
+  return (d===0||d)?d:DEFAULT_RETENTION;
+}
+
+async function runRetentionSweep(){
+  const days=retentionDays();
+  if(!days||days<=0)return;                 // disabled
+
+  // Don't hammer it on every page load
+  const last=parseInt(localStorage.getItem('cmas-lastsweep')||'0',10);
+  if(Date.now()-last<SWEEP_INTERVAL)return;
+  localStorage.setItem('cmas-lastsweep',String(Date.now()));
+
+  const cutoff=addDays(new Date(),-days);
+  const cutoffKey=dk(cutoff.getFullYear(),cutoff.getMonth(),cutoff.getDate());
+  const cutoffMs=cutoff.getTime();
+  let removed=0;
+
+  try{
+    // Events (and their chat threads) that finished before the cutoff
+    const evSnap=await db.ref('events').once('value');
+    const jobs=[];
+    evSnap.forEach(c=>{
+      const ev=c.val();
+      const ends=ev.endDate&&ev.endDate>ev.date?ev.endDate:ev.date;
+      if(ends&&ends<cutoffKey){
+        jobs.push(db.ref('events/'+c.key).remove());
+        jobs.push(db.ref('chat/'+c.key).remove());
+        removed++;
+      }
+    });
+
+    // Away blocks that finished before the cutoff, unless they repeat
+    const awSnap=await db.ref('away').once('value');
+    awSnap.forEach(c=>{
+      const a=c.val();
+      if(a.repeat&&a.repeat!=='none')return;   // recurring blocks stay
+      const ends=a.endDate&&a.endDate>a.date?a.endDate:a.date;
+      if(ends&&ends<cutoffKey){
+        jobs.push(db.ref('away/'+c.key).remove());
+        removed++;
+      }
+    });
+
+    // Polls created before the cutoff
+    const pollSnap=await db.ref('polls').once('value');
+    pollSnap.forEach(c=>{
+      const p=c.val();
+      if(p.created&&p.created<cutoffMs){
+        jobs.push(db.ref('polls/'+c.key).remove());
+        removed++;
+      }
+    });
+
+    // Orphaned chat threads whose event is long gone
+    const chatSnap=await db.ref('chat').once('value');
+    const liveIds=new Set();
+    evSnap.forEach(c=>liveIds.add(c.key));
+    chatSnap.forEach(c=>{
+      if(!liveIds.has(c.key))jobs.push(db.ref('chat/'+c.key).remove());
+    });
+
+    await Promise.all(jobs);
+    if(removed&&isAdmin())toast('Cleaned up '+removed+' old item'+(removed===1?'':'s'));
+  }catch(e){
+    // Cleanup is best-effort; never block the app over it
+    console.warn('Retention sweep failed:',e.message);
+  }
+}
+
+/* ==============================================================
    PLANS
    ============================================================== */
+let planWhen='upcoming';
+
+function setPlanWhen(w){
+  planWhen=w;buzz(5);
+  document.querySelectorAll('.view-toggle-btn[data-when]').forEach(b=>b.classList.toggle('active',b.dataset.when===w));
+  renderPlans();
+}
+
 function renderPlans(){
   const c=document.getElementById('plans-list');
-  const plans=visibleEvents().filter(e=>e.type==='plan').sort((a,b)=>a.date>b.date?1:-1);
-  if(!plans.length){c.innerHTML='<div class="day-empty">No plans yet</div>';return;}
+  const today=todayStr();
+  const all=visibleEvents().filter(e=>e.type==='plan');
+
+  const plans=planWhen==='past'
+    ? all.filter(e=>(e.endDate||e.date)<today).sort((a,b)=>a.date<b.date?1:-1)   // newest first
+    : all.filter(e=>(e.endDate||e.date)>=today).sort((a,b)=>a.date>b.date?1:-1); // soonest first
+
+  if(!plans.length){
+    c.innerHTML=planWhen==='past'
+      ? '<div class="day-empty">No past plans</div>'
+      : '<div class="day-empty">No upcoming plans</div>';
+    return;
+  }
   c.innerHTML='';
+  if(planWhen==='past'){
+    const note=document.createElement('div');
+    note.style.cssText='font-size:11px;color:var(--text-faint);padding:0 4px 8px';
+    note.textContent=retentionLabel();
+    c.appendChild(note);
+  }
   plans.forEach(ev=>c.appendChild(buildEventCard(ev,true)));
+}
+
+function retentionLabel(){
+  const days=(appCfg&&appCfg.retentionDays)||DEFAULT_RETENTION;
+  return days>0
+    ? 'Plans are removed automatically '+days+' days after they finish.'
+    : 'Nothing is deleted automatically.';
 }
 
 /* ==============================================================
@@ -2752,7 +2992,10 @@ async function deleteEvent(){
    ============================================================== */
 function openDetail(eventId){
   detailId=eventId;
-  document.getElementById('detail-chat').dataset.renderedFor='';
+  const chatEl=document.getElementById('detail-chat');
+  chatEl.dataset.renderedFor='';
+  // Freeze where "New" should sit before opening marks the thread read
+  chatEl.dataset.seenMark=String(lastRead[eventId]||0);
   renderDetail(eventId);
   openPanel('panel-detail');
   attachChatListener(eventId);
@@ -2901,7 +3144,17 @@ function renderChat(eid){
     return;
   }
   c.innerHTML='';
+  const seenBefore=c.dataset.seenMark?parseInt(c.dataset.seenMark,10):(lastRead[eid]||0);
+  let dividerDrawn=false;
   msgs.forEach(m=>{
+    // Mark where the unread ones start, but only for other people's messages
+    if(!dividerDrawn&&m.ts>seenBefore&&m.author!==me.name&&seenBefore>0){
+      const line=document.createElement('div');
+      line.className='chat-new-line';
+      line.textContent='New';
+      c.appendChild(line);
+      dividerDrawn=true;
+    }
     const div=document.createElement('div');div.className='chat-msg';
     const u=users[m.author]||{};
     if(m.system){
@@ -2913,6 +3166,8 @@ function renderChat(eid){
     c.appendChild(div);
   });
   c.dataset.renderedFor=eid;
+  // Anything visible now counts as read
+  markRead(eid);
 
   if(scroller&&(wasNearBottom||isFirstRender)){
     requestAnimationFrame(()=>{scroller.scrollTop=scroller.scrollHeight;});
@@ -3565,7 +3820,8 @@ function renderUpNext(){
     else when=days===0?'Today':days===1?'Tomorrow':days<7?d.toLocaleDateString('en-AU',{weekday:'short'}):d.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
     const cr=users[ev.creator]||{};
     const span=isMultiDay(ev)?`<span class="span-badge">${eventDateRange(ev).length}d</span>`:'';
-    html+=`<div class="upnext-card" onclick="openDetail('${ev.id}')"><span class="upnext-when">${when}</span><span style="width:3px;height:22px;border-radius:2px;background:${cr.color||'#888'};flex-shrink:0"></span><span class="upnext-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</span>${span}${ev.time&&!isMultiDay(ev)?`<span class="upnext-time">${ev.time}</span>`:''}</div>`;
+    const un=unreadCount(ev.id);
+    html+=`<div class="upnext-card" onclick="openDetail('${ev.id}')"><span class="upnext-when">${when}</span><span style="width:3px;height:22px;border-radius:2px;background:${cr.color||'#888'};flex-shrink:0"></span><span class="upnext-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</span>${span}${un>0?'<span class="unread-chip">💬 '+un+'</span>':''}${ev.time&&!isMultiDay(ev)?`<span class="upnext-time">${ev.time}</span>`:''}</div>`;
   });
   c.innerHTML=html;
 }
@@ -4044,7 +4300,41 @@ async function spinEventWheel(eid){
 /* ==============================================================
    SETTINGS
    ============================================================== */
-function openSettings(){openPanel('panel-settings');renderProfileCard();renderCF();renderMembers();}
+function openSettings(){openPanel('panel-settings');renderProfileCard();renderRetention();renderCF();renderMembers();}
+
+function renderRetention(){
+  const c=document.getElementById('s-retention-pills');
+  const note=document.getElementById('s-retention-note');
+  const cur=retentionDays();
+  const admin=isAdmin();
+  c.innerHTML='';
+  RETENTION_CHOICES.forEach(d=>{
+    const b=document.createElement('button');
+    b.className='repeat-pill'+(d===cur?' active':'');
+    b.textContent=d===0?'Never':d+' days';
+    if(!admin){b.disabled=true;b.style.opacity=d===cur?'1':'.4';b.style.cursor='default';}
+    else b.onclick=()=>setRetention(d);
+    c.appendChild(b);
+  });
+  note.textContent=admin
+    ? retentionLabel()
+    : retentionLabel()+' Only an admin can change this.';
+}
+
+async function setRetention(days){
+  if(!isAdmin())return;
+  if(days>0){
+    const ok=await appConfirm('Delete everything older than '+days+' days, from now on? Items already past that age will be removed on the next cleanup.',{okText:'Set',danger:true});
+    if(!ok)return;
+  }
+  await db.ref('config/retentionDays').set(days);
+  appCfg.retentionDays=days;
+  buzz();
+  toast(days>0?'Keeping '+days+' days':'Auto-delete off');
+  renderRetention();
+  // Let the next sweep run straight away rather than waiting
+  localStorage.removeItem('cmas-lastsweep');
+}
 
 function renderProfileCard(){
   const av=document.getElementById('s-avatar');
@@ -4168,7 +4458,7 @@ async function adminPromote(name){
 function openPanel(id){document.getElementById(id).classList.add('open');}
 function closePanel(id){
   document.getElementById(id).classList.remove('open');
-  if(id==='panel-detail'){detachChatListener();detailId=null;}
+  if(id==='panel-detail'){detachChatListener();detailId=null;renderUnreadBadges();}
 }
 
 /* ==============================================================
