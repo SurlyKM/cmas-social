@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <style>
 /* ============================================================
@@ -1441,7 +1442,7 @@ const MSHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 /* ==============================================================
    STATE
    ============================================================== */
-let db, me, appCfg;
+let db, me, appCfg, authUid=null;
 let users={}, events={}, groups={}, polls={}, wheels={}, away={}, chatMsgs={};
 let selDate=todayStr(), calView='week';
 let viewWeekStart=getWeekStart(new Date()), viewMonth=new Date().getMonth(), viewYear=new Date().getFullYear();
@@ -1485,6 +1486,36 @@ async function sha256(str) {
   return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
+/* Recovery codes are short, so an unsalted SHA-256 is trivially reversible
+   by anyone who can read the database. Salt each one and stretch it a bit. */
+function randomSalt(){
+  const a=new Uint8Array(16);
+  crypto.getRandomValues(a);
+  return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function hashCode(code,salt){
+  let h=await sha256(salt+':'+code.toUpperCase());
+  // A few thousand rounds costs us nothing but slows bulk cracking down a lot
+  for(let i=0;i<5000;i++) h=await sha256(h);
+  return h;
+}
+
+/* Verify against either the new salted hash or the old unsalted one */
+async function verifyCode(user,code){
+  if(user.codeSalt){
+    return (await hashCode(code,user.codeSalt))===user.codeHash;
+  }
+  // Legacy accounts created before salting
+  return (await sha256(code.toUpperCase()))===user.codeHash
+      || (await sha256(code))===user.codeHash;
+}
+
+async function makeCodeRecord(code){
+  const salt=randomSalt();
+  return { codeSalt:salt, codeHash:await hashCode(code,salt) };
+}
+
 function generateCode() {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I or O to avoid confusion
   const digits = '0123456789';
@@ -1506,6 +1537,19 @@ function init() {
   firebase.initializeApp(FIREBASE_CONFIG);
   db = firebase.database();
 
+  // Every read and write requires an auth token, so sign in first.
+  // Anonymous auth gives each device a durable uid with no login screen.
+  firebase.auth().signInAnonymously()
+    .then(cred=>{ authUid=cred.user.uid; bootApp(); })
+    .catch(e=>{
+      document.getElementById('loading').innerHTML =
+        '<div style="max-width:360px"><div style="font-size:18px;font-weight:700;margin-bottom:6px">Can\'t connect</div>'+
+        '<div style="color:var(--text-dim);font-size:13px">Sign-in failed: '+esc(e.code||e.message)+
+        '<br><br>If this says <code>auth/configuration-not-found</code>, Anonymous sign-in needs enabling in the Firebase console under Authentication → Sign-in method.</div></div>';
+    });
+}
+
+function bootApp(){
   db.ref('config').once('value').then(snap => {
     if (!snap.exists()) {
       showScreen('gate-first');
@@ -1518,14 +1562,29 @@ function init() {
       try {
         const p = JSON.parse(stored);
         db.ref('users/'+encKey(p.name)).once('value').then(u => {
-          if (u.exists()) { me = u.val(); startApp(); }
+          if (u.exists()) { me = u.val(); claimUid(); startApp(); }
           else showScreen('gate-welcome');
         });
       } catch(e) { showScreen('gate-welcome'); }
     } else {
       showScreen('gate-welcome');
     }
+  }).catch(e=>{
+    document.getElementById('loading').innerHTML =
+      '<div style="max-width:360px"><div style="font-size:18px;font-weight:700;margin-bottom:6px">Can\'t read data</div>'+
+      '<div style="color:var(--text-dim);font-size:13px">'+esc(e.message)+'</div></div>';
   });
+}
+
+/* Record this device's anon uid against the account, so rules can
+   tie writes back to a real identity later on. */
+function claimUid(){
+  if(!me||!authUid)return;
+  const uids=me.uids||{};
+  if(uids[authUid])return;
+  uids[authUid]=Date.now();
+  me.uids=uids;
+  db.ref('users/'+encKey(me.name)+'/uids/'+authUid).set(Date.now()).catch(()=>{});
 }
 
 function showScreen(id) {
@@ -1573,16 +1632,17 @@ async function submitProfile() {
   if (snap.exists()) { document.getElementById('profile-err').textContent='Name taken, try another'; return; }
 
   const code = generateCode();
-  const hash = await sha256(code);
+  const rec = await makeCodeRecord(code);
 
-  pendingRecovery = { name, color: selColor, code, hash };
+  pendingRecovery = { name, color: selColor, code, rec };
   document.getElementById('recovery-display').textContent = code;
   showScreen('gate-recovery');
 }
 
 async function confirmRecovery() {
-  const { name, color, hash } = pendingRecovery;
-  const user = { name, color, closeFriends:{}, codeHash: hash, created: Date.now() };
+  const { name, color, rec } = pendingRecovery;
+  const user = { name, color, closeFriends:{}, codeHash: rec.codeHash, codeSalt: rec.codeSalt, created: Date.now() };
+  if(authUid)user.uids={[authUid]:Date.now()};
   await db.ref('users/'+encKey(name)).set(user);
   me = user;
   localStorage.setItem('cmas-user', JSON.stringify({name}));
@@ -1611,11 +1671,19 @@ async function submitSignin() {
   if (!snap.exists()) { document.getElementById('signin-err').textContent='User not found'; return; }
 
   const user = snap.val();
-  const hash = await sha256(code);
-  if (hash !== user.codeHash) { document.getElementById('signin-err').textContent='Wrong recovery code'; return; }
+  const ok = await verifyCode(user, code);
+  if (!ok) { document.getElementById('signin-err').textContent='Wrong recovery code'; return; }
+
+  // Quietly upgrade accounts still on the old unsalted hash
+  if(!user.codeSalt){
+    const rec = await makeCodeRecord(code);
+    await db.ref('users/'+encKey(name)).update(rec);
+    user.codeHash=rec.codeHash; user.codeSalt=rec.codeSalt;
+  }
 
   me = user;
   localStorage.setItem('cmas-user', JSON.stringify({name}));
+  claimUid();
   startApp();
 }
 
@@ -1633,8 +1701,9 @@ async function submitFirst() {
   await db.ref('groups').push().set({ name:'Everyone', members:{0:name}, created:Date.now() });
 
   const recoveryCode = generateCode();
-  const hash = await sha256(recoveryCode);
-  const user = { name, color:selColor, closeFriends:{}, codeHash:hash, admin:true, created:Date.now() };
+  const rec = await makeCodeRecord(recoveryCode);
+  const user = { name, color:selColor, closeFriends:{}, codeHash:rec.codeHash, codeSalt:rec.codeSalt, admin:true, created:Date.now() };
+  if(authUid)user.uids={[authUid]:Date.now()};
   await db.ref('users/'+encKey(name)).set(user);
   me = user;
   localStorage.setItem('cmas-user', JSON.stringify({name}));
@@ -3796,6 +3865,9 @@ async function signOut(){
   const ok=await appConfirm('Sign out on this device? You\'ll need your recovery code to get back in.',{okText:'Sign out',danger:true});
   if(!ok)return;
   try{await db.ref('presence/'+sessionId).remove();}catch(e){}
+  // Drop this device's uid from the account so it isn't left claimed
+  try{ if(authUid)await db.ref('users/'+encKey(me.name)+'/uids/'+authUid).remove(); }catch(e){}
+  try{await firebase.auth().signOut();}catch(e){}
   localStorage.removeItem('cmas-user');
   location.reload();
 }
@@ -4039,9 +4111,9 @@ async function resetOwnCode(){
   const yes=await appConfirm('Generate a new recovery code? Your old code will stop working.',{okText:'Reset'});
   if(!yes)return;
   const code=generateCode();
-  const hash=await sha256(code);
-  await db.ref('users/'+encKey(me.name)+'/codeHash').set(hash);
-  me.codeHash=hash;
+  const rec=await makeCodeRecord(code);
+  await db.ref('users/'+encKey(me.name)).update(rec);
+  me.codeHash=rec.codeHash; me.codeSalt=rec.codeSalt;
   document.getElementById('newcode-for').textContent='Your new recovery code:';
   document.getElementById('newcode-display').textContent=code;
   openPanel('panel-newcode');
@@ -4052,8 +4124,8 @@ async function adminResetCode(name){
   const yes=await appConfirm('Reset recovery code for '+name+'? Their old code will stop working.',{okText:'Reset'});
   if(!yes)return;
   const code=generateCode();
-  const hash=await sha256(code);
-  await db.ref('users/'+encKey(name)+'/codeHash').set(hash);
+  const rec=await makeCodeRecord(code);
+  await db.ref('users/'+encKey(name)).update(rec);
   document.getElementById('newcode-for').textContent='New code for '+name+':';
   document.getElementById('newcode-display').textContent=code;
   openPanel('panel-newcode');
