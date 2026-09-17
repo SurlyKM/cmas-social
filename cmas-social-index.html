@@ -461,6 +461,12 @@ input,select,textarea,button{font-family:var(--font)}
 .wheelpick-row{display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .wheelpick-row:active{background:var(--surface-3)}
 
+/* Past items */
+.ev-card.is-past{opacity:.55}
+.ev-card.is-past .ev-title{font-weight:500}
+.past-chip{font-size:10px;padding:2px 7px;border-radius:9px;background:var(--surface-3);color:var(--text-faint);font-weight:600}
+.search-group{font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;padding:10px 4px 6px}
+
 /* Unread chat indicators */
 .tab-btn{position:relative}
 .tab-badge{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--danger);color:#fff;font:700 10px var(--font);display:flex;align-items:center;justify-content:center;line-height:1}
@@ -2013,7 +2019,10 @@ function buildEventCard(ev,showDate,onDate){
   const wrap=document.createElement('div');wrap.className='ev-swipe';
   const cr=users[ev.creator]||{};
   const multi=isMultiDay(ev);
+  const isPast=(ev.endDate||ev.date)<todayStr();
   let badges='';
+  // Only worth flagging in mixed lists (search, plans); the day view already shows the date
+  if(isPast&&showDate)badges+='<span class="past-chip">Past</span>';
   if(multi&&onDate){
     const pos=spanPosition(ev,onDate);
     badges+=`<span class="span-badge">Day ${pos.n} of ${pos.total}</span>`;
@@ -2049,7 +2058,7 @@ function buildEventCard(ev,showDate,onDate){
   }
   if(ev.location)meta+=' · '+esc(ev.location);
 
-  wrap.innerHTML=`<div class="ev-swipe-bg">Delete</div><div class="ev-swipe-fg"><div class="ev-card${unread>0?' has-unread':''}" style="margin-bottom:0;border:none"><div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="ev-meta">${meta}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div>${unread>0?'<div class="unread-dot" style="align-self:center"></div>':''}</div></div>`;
+  wrap.innerHTML=`<div class="ev-swipe-bg">Delete</div><div class="ev-swipe-fg"><div class="ev-card${unread>0?' has-unread':''}${isPast?' is-past':''}" style="margin-bottom:0;border:none"><div class="ev-bar" style="background:${cr.color||'#888'}"></div><div class="ev-body"><div class="ev-title">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="ev-meta">${meta}</div>${badges?'<div class="ev-badges">'+badges+'</div>':''}</div>${unread>0?'<div class="unread-dot" style="align-self:center"></div>':''}</div></div>`;
   attachSwipe(wrap,ev.id);
   return wrap;
 }
@@ -3852,10 +3861,24 @@ function renderSearch(){
     (e.title||'').toLowerCase().includes(q)||
     (e.location||'').toLowerCase().includes(q)||
     (e.desc||'').toLowerCase().includes(q)
-  ).sort((a,b)=>a.date>b.date?1:-1);
+  );
   if(!matches.length){c.innerHTML='<div class="day-empty">Nothing found</div>';return;}
+
+  const today=todayStr();
+  const upcoming=matches.filter(e=>(e.endDate||e.date)>=today).sort((a,b)=>a.date>b.date?1:-1);
+  const past=matches.filter(e=>(e.endDate||e.date)<today).sort((a,b)=>a.date<b.date?1:-1);
+
   c.innerHTML='';
-  matches.forEach(ev=>c.appendChild(buildEventCard(ev,true)));
+  if(upcoming.length){
+    const h=document.createElement('div');h.className='search-group';h.textContent='Upcoming';
+    c.appendChild(h);
+    upcoming.forEach(ev=>c.appendChild(buildEventCard(ev,true)));
+  }
+  if(past.length){
+    const h=document.createElement('div');h.className='search-group';h.textContent='Past';
+    c.appendChild(h);
+    past.forEach(ev=>c.appendChild(buildEventCard(ev,true)));
+  }
 }
 
 /* ==============================================================
