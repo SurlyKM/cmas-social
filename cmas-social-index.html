@@ -4,6 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CMAS Social</title>
+<meta name="description" content="Plans, polls and who's free — for the group.">
+
+<!-- ============================================================
+     LINK PREVIEW (Open Graph)
+     What Messenger, WhatsApp, iMessage and Slack read when someone
+     pastes a link. Without these you get a bare grey URL.
+
+     NOTE: this card is the same for every shared link, and that is a
+     hard limit of static hosting, not an oversight:
+       1. Share links carry the item in the fragment (#e=<id>), and a
+          fragment is never sent to the server, so the crawler only ever
+          requests the bare page URL.
+       2. Facebook's crawler does not run JavaScript, so tags written by
+          the app at runtime are never seen.
+     Per-event cards need something server-side. See README notes.
+     ============================================================ -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CMAS Social">
+<meta property="og:title" content="CMAS Social">
+<meta property="og:description" content="Plans, polls and who's free — for the group. Open the link to jump straight to it.">
+<meta property="og:locale" content="en_AU">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CMAS Social">
+<meta name="twitter:description" content="Plans, polls and who's free — for the group.">
+
+<!-- Thumbnail. Facebook needs an ABSOLUTE https URL here - it will not
+     accept a relative path, a data: URI or an SVG - so this only works
+     once the real hosted URL is filled in. Put og-image.jpg beside this
+     file, replace YOUR-DOMAIN with the domain the app is served from,
+     and delete the two comment markers around the block.
+     Swap twitter:card to summary_large_image at the same time, so the
+     wide image is not cropped into a small square.
+<meta property="og:image" content="https://YOUR-DOMAIN/og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="CMAS Social - plans, polls and who's free">
+<meta name="twitter:image" content="https://YOUR-DOMAIN/og-image.jpg">
+-->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -465,6 +504,19 @@ input,select,textarea,button{font-family:var(--font)}
 .ev-wheel-actions{display:flex;gap:6px;width:100%;margin-top:6px}
 
 /* Wheel pick rows */
+.imp-drop{border:2px dashed var(--border);border-radius:var(--radius);padding:22px 16px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.imp-drop:active,.imp-drop.over{border-color:var(--primary);background:var(--surface-2)}
+.imp-drop-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.imp-drop-sub{font-size:12px;color:var(--text-faint);line-height:1.5}
+.imp-status{font-size:13px;color:var(--text-dim);margin:12px 0}
+.imp-bar{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
+.imp-row{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.imp-row.off{opacity:.45}
+.imp-check{width:22px;height:22px;flex-shrink:0;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;margin-top:1px}
+.imp-row.on .imp-check{background:var(--primary);border-color:var(--primary)}
+.imp-title{font-size:14px;font-weight:600;word-break:break-word}
+.imp-meta{font-size:12px;color:var(--text-dim);margin-top:2px}
+.imp-note{font-size:11px;color:var(--text-faint);margin-top:3px}
 .wheelpick-row{display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .wheelpick-row:active{background:var(--surface-3)}
 
@@ -1093,6 +1145,63 @@ input,select,textarea,button{font-family:var(--font)}
 </div>
 
 <!-- ============================================================
+     PANEL: Import from a calendar file
+     ============================================================ -->
+<div id="panel-import" class="panel">
+  <div class="panel-backdrop" onclick="closePanel('panel-import')"></div>
+  <div class="panel-body" style="height:88vh;height:88dvh">
+    <div class="panel-handle"></div>
+    <div class="panel-header">
+      <div class="panel-title">Import events</div>
+      <button class="btn btn-sm btn-primary hidden" id="imp-go" onclick="runImport()">Import</button>
+    </div>
+    <div class="panel-scroll">
+      <div id="imp-picker">
+        <div class="imp-drop" id="imp-drop" onclick="document.getElementById('imp-file').click()">
+          <div class="imp-drop-title">Choose a calendar file</div>
+          <div class="imp-drop-sub">
+            .ics from Outlook or Apple Calendar<br>
+            .zip straight from a Google Calendar export
+          </div>
+        </div>
+        <input type="file" id="imp-file" accept=".ics,.ifb,.zip,text/calendar,application/zip" style="display:none" onchange="onImportFile(this.files[0])">
+        <details style="margin-top:14px">
+          <summary style="font-size:13px;color:var(--text-dim);cursor:pointer">Where do I get the file?</summary>
+          <div style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-top:8px">
+            <b style="color:var(--text)">Google Calendar</b> — on a computer:
+            Settings &rarr; Import &amp; export &rarr; Export. You get a .zip;
+            drop it in here as is.<br><br>
+            <b style="color:var(--text)">Outlook</b> — outlook.com &rarr;
+            Calendar &rarr; Settings &rarr; Shared calendars, or
+            File &rarr; Save Calendar in the desktop app.<br><br>
+            <b style="color:var(--text)">Apple Calendar</b> —
+            File &rarr; Export &rarr; Export&hellip;
+          </div>
+        </details>
+      </div>
+
+      <div id="imp-status" class="imp-status hidden"></div>
+
+      <div id="imp-options" class="hidden">
+        <div class="settings-row" style="border-bottom:none">
+          <span>Include past events<div style="font-size:12px;color:var(--text-faint);font-weight:400">Off by default &mdash; exports go back years</div></span>
+          <button id="imp-past" class="toggle" onclick="toggleImportPast()"></button>
+        </div>
+        <div class="imp-bar">
+          <button class="btn btn-sm btn-secondary" onclick="setAllImport(true)">Select all</button>
+          <button class="btn btn-sm btn-secondary" onclick="setAllImport(false)">None</button>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm btn-secondary" onclick="resetImport()">Another file</button>
+        </div>
+      </div>
+
+      <div id="imp-list"></div>
+      <div id="imp-err" class="gate-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      PANEL: Edit Profile
      ============================================================ -->
 <div id="panel-profile" class="panel">
@@ -1148,6 +1257,10 @@ input,select,textarea,button{font-family:var(--font)}
         <div class="settings-row"><span>Access code</span><span id="s-code" style="font-family:monospace;letter-spacing:.04em"></span></div>
         <div class="settings-row"><span>Recovery code</span><button class="btn btn-sm btn-secondary" onclick="resetOwnCode()">Reset my code</button></div>
         <div class="settings-row" style="border-bottom:none"><span>Session</span><button class="btn btn-sm btn-danger" onclick="signOut()">Sign out</button></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-heading">Import</div>
+        <div class="settings-row" style="border-bottom:none"><span>From another calendar<div style="font-size:12px;color:var(--text-faint);font-weight:400">Google, Outlook or Apple export file</div></span><button class="btn btn-sm btn-secondary" onclick="openImport()">Import</button></div>
       </div>
       <div class="settings-section" id="s-retention-section">
         <div class="settings-heading">Housekeeping</div>
@@ -4764,6 +4877,357 @@ async function spinEventWheel(eid){
     buzz(30);chime('win');
     toast('🎉 '+winner);
   });
+}
+
+/* ==============================================================
+   CALENDAR IMPORT (.ics / .zip)
+   Google Calendar exports a .zip of .ics files; Outlook and Apple
+   Calendar export a bare .ics. Both are iCalendar (RFC 5545) inside.
+   ============================================================== */
+const IMPORT_CAP=800;          // refuse to preview more than this
+let impParsed=[], impPast=false;
+
+function openImport(){ resetImport(); openPanel('panel-import'); }
+
+function resetImport(){
+  impParsed=[]; impPast=false;
+  document.getElementById('imp-file').value='';
+  document.getElementById('imp-picker').classList.remove('hidden');
+  document.getElementById('imp-options').classList.add('hidden');
+  document.getElementById('imp-go').classList.add('hidden');
+  document.getElementById('imp-status').classList.add('hidden');
+  document.getElementById('imp-list').innerHTML='';
+  document.getElementById('imp-err').textContent='';
+  const t=document.getElementById('imp-past'); if(t)t.classList.remove('on');
+}
+
+function impStatus(msg){
+  const el=document.getElementById('imp-status');
+  el.classList.remove('hidden'); el.textContent=msg;
+}
+
+/* ---------- iCalendar parsing ---------- */
+
+/* RFC 5545 folds long lines by starting the continuation with a space or
+   tab. Unfold before anything else or values get truncated mid-word. */
+function icsUnfold(text){
+  return text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n[ \t]/g,'');
+}
+
+function icsUnescape(v){
+  return String(v||'')
+    .replace(/\\n/gi,' ')
+    .replace(/\\,/g,',')
+    .replace(/\;/g,';')
+    .replace(/\\\\/g,'\\')
+    .trim();
+}
+
+/* Returns {date:'YYYY-MM-DD', time:'HH:MM'|'', allDay:bool} or null.
+   Handles VALUE=DATE, floating local times, UTC (trailing Z) and TZID.
+   A TZID time is read as wall-clock time, which is what someone importing
+   their own calendar expects - converting it would shift every event. */
+function parseIcsDate(rawParams,value){
+  const params=(rawParams||'').toUpperCase();
+  const v=(value||'').trim();
+  let m=v.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if(m||params.indexOf('VALUE=DATE')!==-1){
+    if(!m)m=v.match(/^(\d{4})(\d{2})(\d{2})/);
+    if(!m)return null;
+    return {date:m[1]+'-'+m[2]+'-'+m[3], time:'', allDay:true};
+  }
+  m=v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$/);
+  if(!m)return null;
+  const [,Y,Mo,D,H,Mi,Se,Z]=m;
+  if(Z==='Z'){
+    // UTC instant - show it in the viewer's own local time
+    const d=new Date(Date.UTC(+Y,+Mo-1,+D,+H,+Mi,+Se));
+    return {
+      date:dk(d.getFullYear(),d.getMonth(),d.getDate()),
+      time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),
+      allDay:false
+    };
+  }
+  return {date:Y+'-'+Mo+'-'+D, time:H+':'+Mi, allDay:false};
+}
+
+/* Recurring events are imported as their FIRST DATE ONLY.
+   This is deliberate. Saving a repeat in this app does not store a rule -
+   saveEvent() writes out 12 separate event rows there and then. Copying
+   that behaviour into the importer would mean one file quietly turning
+   into hundreds of rows, and setting repeat on a single imported row
+   instead would be worse: the field would sit there doing nothing while
+   the event still showed up once. So we take the first occurrence and say
+   so in the preview - anyone who wants the series can open that event and
+   pick a repeat. */
+function mapRRule(rrule){
+  if(!rrule)return {note:''};
+  const R=rrule.toUpperCase();
+  const freq=(R.match(/FREQ=([A-Z]+)/)||[])[1]||'';
+  const interval=parseInt((R.match(/INTERVAL=(\d+)/)||[])[1]||'1',10);
+  const byday=(R.match(/BYDAY=([A-Z0-9,\-+]+)/)||[])[1];
+  const days=byday?byday.split(',').length:0;
+  let cadence='Repeats';
+  if(freq==='WEEKLY'&&days>1)  cadence=days+'\u00d7 a week';
+  else if(freq==='WEEKLY')     cadence=interval===2?'Fortnightly':interval>2?('Every '+interval+' weeks'):'Weekly';
+  else if(freq==='DAILY')      cadence=interval>1?('Every '+interval+' days'):'Daily';
+  else if(freq==='MONTHLY')    cadence=interval>1?('Every '+interval+' months'):'Monthly';
+  else if(freq==='YEARLY')     cadence='Yearly';
+  return {note:cadence+' in the original \u2014 importing the first date only'};
+}
+
+function parseICS(text){
+  const lines=icsUnfold(text).split('\n');
+  const out=[]; let cur=null;
+  for(const line of lines){
+    const t=line.trim();
+    if(t==='BEGIN:VEVENT'){ cur={}; continue; }
+    if(t==='END:VEVENT'){ if(cur)out.push(cur); cur=null; continue; }
+    if(!cur||!t)continue;
+    const c=t.indexOf(':');
+    if(c===-1)continue;
+    const left=t.slice(0,c), value=t.slice(c+1);
+    const semi=left.indexOf(';');
+    const name=(semi===-1?left:left.slice(0,semi)).toUpperCase();
+    const params=semi===-1?'':left.slice(semi+1);
+    if(name==='DTSTART')      cur.start=parseIcsDate(params,value);
+    else if(name==='DTEND')   cur.end=parseIcsDate(params,value);
+    else if(name==='SUMMARY') cur.summary=icsUnescape(value);
+    else if(name==='LOCATION')cur.location=icsUnescape(value);
+    else if(name==='DESCRIPTION')cur.desc=icsUnescape(value);
+    else if(name==='UID')     cur.uid=value.trim();
+    else if(name==='RRULE')   cur.rrule=value.trim();
+    else if(name==='STATUS')  cur.status=value.trim().toUpperCase();
+  }
+  return out;
+}
+
+/* Turn raw VEVENTs into things this app can store */
+function normaliseIcsEvents(raw){
+  const today=todayStr();
+  return raw.map(e=>{
+    if(!e.start||!e.start.date)return null;
+    if(e.status==='CANCELLED')return null;
+    const title=(e.summary||'').trim()||'(untitled)';
+    let endDate='';
+    if(e.end&&e.end.date){
+      if(e.start.allDay){
+        // An all-day DTEND is EXCLUSIVE: a one-day event on the 25th is
+        // stored as DTEND 26th. Step back a day or every import gains one.
+        const d=parseDate(e.end.date);
+        d.setDate(d.getDate()-1);
+        endDate=dk(d.getFullYear(),d.getMonth(),d.getDate());
+      } else {
+        endDate=e.end.date;
+      }
+      if(endDate<=e.start.date)endDate='';
+    }
+    const rr=mapRRule(e.rrule);
+    return {
+      title,
+      date:e.start.date,
+      time:e.start.time||'',
+      endDate,
+      location:e.location||'',
+      desc:e.desc||'',
+      note:rr.note,
+      uid:e.uid||'',
+      past:e.start.date<today,
+      pick:true
+    };
+  }).filter(Boolean)
+    .sort((a,b)=>a.date===b.date?a.title.localeCompare(b.title):a.date.localeCompare(b.date));
+}
+
+/* ---------- zip (Google exports one) ---------- */
+
+/* Minimal reader: walks the central directory from the End Of Central
+   Directory record, which is the only reliable way - local headers can
+   defer their sizes to a trailing descriptor. */
+async function icsFilesFromZip(buf){
+  const u8=new Uint8Array(buf), dv=new DataView(buf);
+  let eocd=-1;
+  for(let i=u8.length-22;i>=0&&i>u8.length-66000;i--){
+    if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}
+  }
+  if(eocd===-1)throw new Error('Not a readable zip file');
+  const count=dv.getUint16(eocd+10,true);
+  let off=dv.getUint32(eocd+16,true);
+  const files=[];
+  for(let k=0;k<count;k++){
+    if(dv.getUint32(off,true)!==0x02014b50)break;
+    const method=dv.getUint16(off+10,true);
+    const compSize=dv.getUint32(off+20,true);
+    const nameLen=dv.getUint16(off+28,true);
+    const extraLen=dv.getUint16(off+30,true);
+    const cmtLen=dv.getUint16(off+32,true);
+    const local=dv.getUint32(off+42,true);
+    const name=new TextDecoder().decode(u8.subarray(off+46,off+46+nameLen));
+    off+=46+nameLen+extraLen+cmtLen;
+    if(!/\.ics$/i.test(name))continue;
+    // Re-read the local header: its own name/extra lengths locate the data
+    const lNameLen=dv.getUint16(local+26,true);
+    const lExtraLen=dv.getUint16(local+28,true);
+    const start=local+30+lNameLen+lExtraLen;
+    const bytes=u8.subarray(start,start+compSize);
+    if(method===0){ files.push(new TextDecoder().decode(bytes)); continue; }
+    if(method!==8)continue;
+    if(typeof DecompressionStream==='undefined')
+      throw new Error('This browser can’t open zip files — unzip it first and pick the .ics');
+    const ds=new DecompressionStream('deflate-raw');
+    const blob=new Blob([bytes]).stream().pipeThrough(ds);
+    files.push(await new Response(blob).text());
+  }
+  if(!files.length)throw new Error('No .ics file inside that zip');
+  return files;
+}
+
+/* ---------- file handling ---------- */
+
+async function onImportFile(file){
+  if(!file)return;
+  const err=document.getElementById('imp-err'); err.textContent='';
+  impStatus('Reading '+file.name+'…');
+  try{
+    let texts=[];
+    if(/\.zip$/i.test(file.name)||file.type==='application/zip'){
+      texts=await icsFilesFromZip(await file.arrayBuffer());
+    } else {
+      texts=[await file.text()];
+    }
+    const raw=texts.flatMap(t=>parseICS(t));
+    if(!raw.length){
+      impStatus('');
+      err.textContent='No events found in that file. Is it a calendar export?';
+      return;
+    }
+    impParsed=normaliseIcsEvents(raw);
+    if(!impParsed.length){
+      impStatus('');
+      err.textContent='That file had '+raw.length+' entries but none had a usable date.';
+      return;
+    }
+    document.getElementById('imp-picker').classList.add('hidden');
+    document.getElementById('imp-options').classList.remove('hidden');
+    renderImportList();
+  }catch(e){
+    impStatus('');
+    err.textContent=e.message||'Could not read that file';
+  }
+}
+
+function toggleImportPast(){
+  impPast=!impPast;
+  document.getElementById('imp-past').classList.toggle('on',impPast);
+  buzz(5);
+  renderImportList();
+}
+
+function visibleImports(){ return impParsed.filter(e=>impPast||!e.past); }
+
+function setAllImport(on){
+  visibleImports().forEach(e=>{ if(!e.dupe)e.pick=on; });
+  buzz(5); renderImportList();
+}
+
+/* Already in the app? Match on the stored ics uid first, then fall back to
+   same title on the same day, so a second import of the same export
+   doesn't duplicate everything. */
+function findExisting(e){
+  const all=Object.values(events);
+  if(e.uid){
+    const byUid=all.find(x=>x.icsUid&&x.icsUid===e.uid);
+    if(byUid)return byUid;
+  }
+  const t=e.title.toLowerCase();
+  return all.find(x=>(x.title||'').toLowerCase()===t&&x.date===e.date);
+}
+
+function renderImportList(){
+  const c=document.getElementById('imp-list');
+  const list=visibleImports();
+  list.forEach(e=>{ e.dupe=!!findExisting(e); if(e.dupe)e.pick=false; });
+
+  const hiddenPast=impParsed.length-list.length;
+  const selectable=list.filter(e=>!e.dupe);
+  const chosen=selectable.filter(e=>e.pick);
+
+  impStatus(
+    impParsed.length+' event'+(impParsed.length===1?'':'s')+' in the file'+
+    (hiddenPast?' · '+hiddenPast+' in the past hidden':'')+
+    (list.length-selectable.length?' · '+(list.length-selectable.length)+' already here':'')
+  );
+
+  const go=document.getElementById('imp-go');
+  go.classList.toggle('hidden',!chosen.length);
+  go.textContent='Import '+chosen.length;
+
+  if(!list.length){
+    c.innerHTML='<div class="day-empty">Nothing to show. Turn on "Include past events" to see older ones.</div>';
+    return;
+  }
+  if(list.length>IMPORT_CAP){
+    c.innerHTML='<div class="day-empty">That export has '+list.length+
+      ' upcoming events — too many to bring in at once. Export a shorter date range, or a single calendar rather than all of them.</div>';
+    go.classList.add('hidden');
+    return;
+  }
+
+  c.innerHTML='';
+  list.forEach((e,i)=>{
+    const row=document.createElement('div');
+    row.className='imp-row'+(e.dupe?' off':(e.pick?' on':''));
+    const d=parseDate(e.date);
+    let meta=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    if(e.time)meta+=' at '+e.time;
+    if(e.endDate)meta+=' → '+parseDate(e.endDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    if(e.location)meta+=' · '+e.location;
+    row.innerHTML='<div class="imp-check">'+(e.dupe?'':(e.pick?'✓':''))+'</div>'+
+      '<div style="flex:1;min-width:0"><div class="imp-title">'+esc(e.title)+'</div>'+
+      '<div class="imp-meta">'+esc(meta)+'</div>'+
+      (e.dupe?'<div class="imp-note">Already in CMAS — skipping</div>':'')+
+      (e.note?'<div class="imp-note">'+esc(e.note)+'</div>':'')+'</div>';
+    if(!e.dupe){
+      row.onclick=()=>{ e.pick=!e.pick; buzz(5); renderImportList(); };
+    }
+    c.appendChild(row);
+  });
+}
+
+async function runImport(){
+  const chosen=visibleImports().filter(e=>e.pick&&!e.dupe);
+  if(!chosen.length)return;
+  const ok=await appConfirm(
+    'Add '+chosen.length+' event'+(chosen.length===1?'':'s')+' to CMAS Social? '+
+    'Everyone in the group will see '+(chosen.length===1?'it':'them')+'.',
+    {okText:'Import'}
+  );
+  if(!ok)return;
+
+  const go=document.getElementById('imp-go');
+  go.disabled=true; go.textContent='Importing…';
+
+  let done=0,failed=0;
+  for(const e of chosen){
+    const data={
+      title:e.title, date:e.date, endDate:e.endDate||'', time:e.time||'',
+      location:e.location||'', desc:e.desc||'',
+      groupId:'', privacy:'everyone', type:'event',
+      emoji:guessEmoji(e.title), repeat:'none',
+      creator:me.name, created:Date.now(), updated:Date.now(),
+      importedFrom:'ics'
+    };
+    if(e.uid)data.icsUid=e.uid;
+    try{ await db.ref('events').push().set(data); done++; }
+    catch(err){ failed++; }
+  }
+
+  go.disabled=false;
+  buzz(30);
+  if(done)chime('poll');
+  toast(failed? 'Imported '+done+', '+failed+' failed' : 'Imported '+done+' event'+(done===1?'':'s'));
+  closePanel('panel-import');
+  resetImport();
 }
 
 /* ==============================================================
