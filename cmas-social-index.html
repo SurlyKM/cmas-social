@@ -25,24 +25,17 @@
 <meta property="og:title" content="CMAS Social">
 <meta property="og:description" content="Plans, polls and who's free — for the group. Open the link to jump straight to it.">
 <meta property="og:locale" content="en_AU">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="CMAS Social">
 <meta name="twitter:description" content="Plans, polls and who's free — for the group.">
 
-<!-- Thumbnail. Facebook needs an ABSOLUTE https URL here - it will not
-     accept a relative path, a data: URI or an SVG - so this only works
-     once the real hosted URL is filled in. Put og-image.jpg beside this
-     file, replace YOUR-DOMAIN with the domain the app is served from,
-     and delete the two comment markers around the block.
-     Swap twitter:card to summary_large_image at the same time, so the
-     wide image is not cropped into a small square.
-<meta property="og:image" content="https://YOUR-DOMAIN/og-image.jpg">
+<meta property="og:url" content="https://surlykm.github.io/cmas-social/cmas-social-index.html">
+<meta property="og:image" content="https://surlykm.github.io/cmas-social/og-image.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="CMAS Social - plans, polls and who's free">
-<meta name="twitter:image" content="https://YOUR-DOMAIN/og-image.jpg">
--->
+<meta name="twitter:image" content="https://surlykm.github.io/cmas-social/og-image.jpg">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -276,6 +269,10 @@ input,select,textarea,button{font-family:var(--font)}
    PANELS (bottom sheets)
    ============================================================ */
 .panel{position:fixed;inset:0;z-index:100;display:none}
+/* The dialog sits above any stack of sheets. Panels get a z-index from
+   their depth in the stack (see openPanel), so a fixed 100 here would put
+   a confirm prompt behind the sheet that asked for it. */
+#modal-dialog{z-index:300}
 .panel.open{display:flex}
 .panel-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
 .panel-body{position:absolute;bottom:0;left:0;right:0;max-height:90vh;max-height:90dvh;padding-bottom:var(--safe-b);background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;flex-direction:column;overflow:hidden;animation:slideUp .2s ease-out}
@@ -781,7 +778,7 @@ input,select,textarea,button{font-family:var(--font)}
         </div>
       </div>
       <div class="section-tabs">
-        <button class="section-tab active" data-section="plans" onclick="switchPlanSection('plans')">Plans</button>
+        <button class="section-tab active" data-section="plans" onclick="switchPlanSection('plans')">Plans<span class="section-badge hidden" id="plans-badge"></span></button>
         <button class="section-tab" data-section="polls" onclick="switchPlanSection('polls')">Polls<span class="section-badge hidden" id="polls-badge"></span></button>
         <button class="section-tab" data-section="wheel" onclick="switchPlanSection('wheel')">Wheel</button>
       </div>
@@ -2100,7 +2097,13 @@ function startApp() {
   });
   db.ref('events').on('value',s=>{
     events={};s.forEach(c=>{events[c.key]={id:c.key,...c.val()};});
+    // First run on this device: treat what's already there as seen,
+    // otherwise the whole back catalogue lights up at once.
+    if(localStorage.getItem('cmas-seenplans')===null)markAllPlansSeen();
     renderAll();
+    // renderAll() doesn't touch the badges, so without this a plan arriving
+    // from someone else never lights anything up until an unrelated repaint.
+    renderUnreadBadges();
     if(detailId&&events[detailId])renderDetail(detailId);
     if(document.getElementById('panel-away').classList.contains('open'))renderConvertList();
   });
@@ -2842,12 +2845,15 @@ function renderAwayList(){
 let chatMeta={};          // eventId -> {count, lastTs, lastAuthor}
 let lastRead={};          // eventId -> timestamp we last viewed
 let seenPolls={};         // pollId -> timestamp we first saw it
+let seenPlans={};         // eventId -> timestamp we first saw it
 
 function loadLastRead(){
   try{ lastRead=JSON.parse(localStorage.getItem('cmas-lastread')||'{}'); }
   catch(e){ lastRead={}; }
   try{ seenPolls=JSON.parse(localStorage.getItem('cmas-seenpolls')||'{}'); }
   catch(e){ seenPolls={}; }
+  try{ seenPlans=JSON.parse(localStorage.getItem('cmas-seenplans')||'{}'); }
+  catch(e){ seenPlans={}; }
 }
 function saveLastRead(){
   try{ localStorage.setItem('cmas-lastread',JSON.stringify(lastRead)); }catch(e){}
@@ -2855,12 +2861,45 @@ function saveLastRead(){
 function saveSeenPolls(){
   try{ localStorage.setItem('cmas-seenpolls',JSON.stringify(seenPolls)); }catch(e){}
 }
+function saveSeenPlans(){
+  try{ localStorage.setItem('cmas-seenplans',JSON.stringify(seenPlans)); }catch(e){}
+}
 
 /* Polls created since we last looked, excluding our own */
 function newPolls(){
   return Object.values(polls)
     .filter(p=>p.creator!==me.name&&!seenPolls[p.id])
     .sort((a,b)=>(b.created||0)-(a.created||0));
+}
+
+/* Plans someone else added that we haven't opened yet. Past plans are
+   excluded because the Plans list won't show them, and a badge pointing at
+   something you can't see is worse than no badge at all. */
+function newPlans(){
+  const today=todayStr();
+  return visibleEvents()
+    .filter(ev=>ev.type==='plan'
+             && ev.creator!==me.name
+             && !seenPlans[ev.id]
+             && (ev.endDate||ev.date)>=today)
+    .sort((a,b)=>(b.created||0)-(a.created||0));
+}
+
+function markPlanSeen(eventId){
+  if(seenPlans[eventId])return;
+  const ev=events[eventId];
+  if(!ev||ev.type!=='plan')return;
+  seenPlans[eventId]=Date.now();
+  saveSeenPlans();
+  renderUnreadBadges();
+}
+
+/* Iterates every event, not visibleEvents(), because on the first snapshot
+   `users` may not have loaded yet - the privacy check would then skip
+   close-friends plans and they'd fire as "new" later. */
+function markAllPlansSeen(){
+  Object.values(events).forEach(ev=>{ if(ev.type==='plan')seenPlans[ev.id]=Date.now(); });
+  saveSeenPlans();
 }
 
 function markPollSeen(pollId){
@@ -2893,7 +2932,7 @@ function unreadThreads(){
     .sort((a,b)=>(b.meta.lastTs||0)-(a.meta.lastTs||0));
 }
 
-function totalUnread(){ return unreadThreads().length + newPolls().length; }
+function totalUnread(){ return unreadThreads().length + newPolls().length + newPlans().length; }
 
 function markRead(eventId){
   const m=chatMeta[eventId];
@@ -2912,6 +2951,7 @@ function markAllRead(){
   });
   saveLastRead();
   markAllPollsSeen();
+  markAllPlansSeen();
   buzz();
   renderUnreadBadges();
   closePanel('panel-unread');
@@ -2920,8 +2960,9 @@ function markAllRead(){
 function openUnreadPanel(){
   const threads=unreadThreads();
   const fresh=newPolls();
+  const plans=newPlans();
   const c=document.getElementById('unread-list');
-  if(!threads.length&&!fresh.length){
+  if(!threads.length&&!fresh.length&&!plans.length){
     c.innerHTML='<div class="day-empty">Nothing new right now</div>';
     openPanel('panel-unread');
     return;
@@ -2938,6 +2979,21 @@ function openUnreadPanel(){
       const opts=p.options?Object.values(p.options).length:0;
       row.innerHTML=`<div class="unread-dot"></div><div class="away-item-info"><div class="away-item-when">${p.type==='date'?'📅':'📊'} ${esc(p.title)}</div><div class="away-item-detail">${opts} options · by ${esc(p.creator)} · ${timeAgo(p.created)}</div></div>`;
       row.onclick=()=>{closePanel('panel-unread');switchTab('plans');switchPlanSection('polls');openPollDetail(p.id);};
+      c.appendChild(row);
+    });
+  }
+
+  if(plans.length){
+    const h=document.createElement('div');
+    h.className='search-group';h.textContent='New plans';
+    c.appendChild(h);
+    plans.forEach(ev=>{
+      const row=document.createElement('div');
+      row.className='away-item';row.style.cursor='pointer';
+      const d=parseDate(ev.date);
+      const when=d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+      row.innerHTML=`<div class="unread-dot"></div><div class="away-item-info"><div class="away-item-when">${ev.emoji?ev.emoji+' ':''}${esc(ev.title)}</div><div class="away-item-detail">${when} · by ${esc(ev.creator)} · ${timeAgo(ev.created)}</div></div>`;
+      row.onclick=()=>{closePanel('panel-unread');openDetail(ev.id);};
       c.appendChild(row);
     });
   }
@@ -3041,9 +3097,18 @@ function renderUnreadBadges(){
       tab.appendChild(badge);
     }
     // Only count what the Plans list can actually show, so the number never lies
-    const planUnread=unreadThreads().filter(x=>x.ev.type==='plan'&&(x.ev.endDate||x.ev.date)>=todayStr()).length;
+    const planUnread=unreadThreads().filter(x=>x.ev.type==='plan'&&(x.ev.endDate||x.ev.date)>=todayStr()).length
+                    +newPlans().length;
     badge.textContent=planUnread>9?'9+':String(planUnread);
     badge.classList.toggle('hidden',planUnread===0);
+  }
+
+  // Plans sub-tab badge
+  const nb=document.getElementById('plans-badge');
+  if(nb){
+    const np=newPlans().length;
+    nb.textContent=np>9?'9+':String(np);
+    nb.classList.toggle('hidden',np===0);
   }
 
   // Polls sub-tab badge
@@ -3508,6 +3573,7 @@ async function deleteEvent(){
    ============================================================== */
 function openDetail(eventId){
   detailId=eventId;
+  markPlanSeen(eventId);
   const chatEl=document.getElementById('detail-chat');
   chatEl.dataset.renderedFor='';
   // Freeze where "New" should sit before opening marks the thread read
@@ -5421,7 +5487,7 @@ const panelStack=[];
 
 function _shutPanel(id){
   const el=document.getElementById(id);
-  if(el)el.classList.remove('open');
+  if(el){ el.classList.remove('open'); el.style.zIndex=''; }
   if(id==='panel-detail'){detachChatListener();detailId=null;renderUnreadBadges();}
 }
 
@@ -5429,6 +5495,12 @@ function openPanel(id){
   const el=document.getElementById(id);
   if(!el||el.classList.contains('open'))return;
   el.classList.add('open');
+  /* Stack order has to come from the stack, not from the order the panels
+     happen to appear in the file. Every .panel is z-index 100, so two open
+     sheets are separated only by DOM order - which meant a sheet opened
+     from a later-declared one (Settings -> Import, Settings -> Profile)
+     rendered UNDERNEATH it, invisible, swallowing every tap. */
+  el.style.zIndex=String(100+panelStack.length+1);
   const body=el.querySelector('.panel-body');
   if(body){body.classList.remove('settling');body.style.transform='';}
   panelStack.push(id);
