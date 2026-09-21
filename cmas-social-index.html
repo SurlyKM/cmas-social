@@ -128,7 +128,7 @@ input,select,textarea,button{font-family:var(--font)}
 .btn-danger{background:var(--danger-dim);color:var(--danger)}
 .btn-full{width:100%}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-icon{width:38px;height:38px;padding:0;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent;flex-shrink:0}
+.btn-icon{width:44px;height:44px;padding:0;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent;flex-shrink:0}
 .btn-icon:hover{color:var(--text);background:var(--surface-3)}
 .btn-icon svg{width:18px;height:18px}
 
@@ -239,10 +239,17 @@ input,select,textarea,button{font-family:var(--font)}
 .panel{position:fixed;inset:0;z-index:100;display:none}
 .panel.open{display:flex}
 .panel-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
-.panel-body{position:absolute;bottom:0;left:0;right:0;max-height:90vh;background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;flex-direction:column;overflow:hidden;animation:slideUp .2s ease-out}
+.panel-body{position:absolute;bottom:0;left:0;right:0;max-height:90vh;max-height:90dvh;padding-bottom:var(--safe-b);background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;display:flex;flex-direction:column;overflow:hidden;animation:slideUp .2s ease-out}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.panel-handle{width:32px;height:4px;background:var(--border);border-radius:2px;margin:8px auto 4px}
-.panel-header{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.panel-handle{width:44px;height:5px;background:var(--border);border-radius:3px;margin:8px auto 4px;flex-shrink:0}
+.panel-grab{padding:2px 0 4px;flex-shrink:0;touch-action:none;cursor:grab;-webkit-tap-highlight-color:transparent}
+.panel-body.dragging{transition:none!important}
+.panel-body.settling{transition:transform .22s cubic-bezier(.2,.8,.3,1)}
+.panel-back{width:44px;height:44px;flex-shrink:0;margin-left:-10px;padding:0;border-radius:50%;background:transparent;border:none;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.panel-back:active{background:var(--surface-3)}
+.panel-back svg{width:24px;height:24px}
+.panel-header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.panel-header>.panel-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel-title{font-size:17px;font-weight:600}
 .panel-scroll{overflow-y:auto;padding:16px;flex:1;-webkit-overflow-scrolling:touch}
 
@@ -364,7 +371,7 @@ input,select,textarea,button{font-family:var(--font)}
 /* Spin wheel */
 .wheel-container{display:flex;flex-direction:column;align-items:center;padding:16px}
 .wheel-wrap{position:relative;width:280px;height:280px;margin:0 auto}
-.wheel-canvas{width:280px;height:280px;transition:transform 4s cubic-bezier(.2,.8,.3,1)}
+.wheel-canvas{width:280px;height:280px;transition:transform 4.2s cubic-bezier(.17,.3,.3,1);will-change:transform}
 .wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:24px solid var(--primary);z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
 .wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:var(--surface);border:3px solid var(--border);border-radius:50%;z-index:1}
 .wheel-result{font-size:20px;font-weight:700;text-align:center;margin:16px 0;min-height:30px;color:var(--primary)}
@@ -448,7 +455,7 @@ input,select,textarea,button{font-family:var(--font)}
 .ev-wheel-empty{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .ev-wheel-stage{display:flex;flex-direction:column;align-items:center;padding:6px 0}
 .ev-wheel-canvas-wrap{position:relative;width:190px;height:190px}
-.ev-wheel-canvas{width:190px;height:190px;transition:transform 4s cubic-bezier(.2,.8,.3,1)}
+.ev-wheel-canvas{width:190px;height:190px;transition:transform 4.2s cubic-bezier(.17,.3,.3,1);will-change:transform}
 .ev-wheel-pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:18px solid var(--primary);z-index:2;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
 .ev-wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;background:var(--surface);border:3px solid var(--border);border-radius:50%;z-index:1}
 .ev-wheel-name{font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
@@ -871,7 +878,7 @@ input,select,textarea,button{font-family:var(--font)}
      ============================================================ -->
 <div id="panel-detail" class="panel">
   <div class="panel-backdrop" onclick="closePanel('panel-detail')"></div>
-  <div class="panel-body" style="height:88vh">
+  <div class="panel-body" style="height:88vh;height:88dvh">
     <div class="panel-handle"></div>
     <div class="panel-header">
       <div class="panel-title" id="detail-title">Event</div>
@@ -1153,6 +1160,13 @@ input,select,textarea,button{font-family:var(--font)}
         <div id="s-members-list"></div>
       </div>
       <div class="settings-section">
+        <div class="settings-heading">Notifications</div>
+        <div class="settings-row"><span>Sound<div style="font-size:12px;color:var(--text-faint);font-weight:400">Chime for new messages and polls</div></span><button id="pref-sound" class="toggle" onclick="togglePref('sound')"></button></div>
+        <div class="settings-row"><span>Vibration<div style="font-size:12px;color:var(--text-faint);font-weight:400">Haptic feedback on taps and alerts</div></span><button id="pref-vibrate" class="toggle" onclick="togglePref('vibrate')"></button></div>
+        <div class="settings-row" style="border-bottom:none"><span>Banner notifications<div style="font-size:12px;color:var(--text-faint);font-weight:400">Alerts when CMAS Social isn't open</div></span><button id="pref-notify" class="toggle" onclick="togglePref('notify')"></button></div>
+        <p id="pref-notify-note" style="font-size:12px;color:var(--text-faint);margin-top:8px"></p>
+      </div>
+      <div class="settings-section">
         <div class="settings-heading">Appearance</div>
         <div class="settings-row"><span>Dark mode</span><button id="theme-toggle" class="toggle on" onclick="toggleTheme()"></button></div>
       </div>
@@ -1313,7 +1327,101 @@ function toast(msg){
   clearTimeout(_toastTimer);
   _toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
-function buzz(ms=10){ if(navigator.vibrate) try{navigator.vibrate(ms);}catch(e){} }
+function buzz(ms=10){ if(!prefs.vibrate)return; if(navigator.vibrate) try{navigator.vibrate(ms);}catch(e){} }
+
+/* ==============================================================
+   SOUND & SYSTEM NOTIFICATIONS
+   Previously the app had no audio at all - every "notification" was a
+   silent badge plus an optional vibration, so anything arriving while
+   you were on another tab went completely unannounced.
+   Tones are synthesised with WebAudio so there are no asset files.
+   ============================================================== */
+const prefs={
+  sound:  localStorage.getItem('cmas-sound')  !== '0',
+  vibrate:localStorage.getItem('cmas-vibrate')!== '0',
+  notify: localStorage.getItem('cmas-notify') === '1'
+};
+function setPref(k,v){
+  prefs[k]=v;
+  localStorage.setItem('cmas-'+k, v?'1':'0');
+}
+
+let _audioCtx=null;
+/* iOS will not let a context start outside a user gesture, so we create
+   and unlock it on the first touch and reuse it from then on. */
+function unlockAudio(){
+  try{
+    if(!_audioCtx){
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC)return;
+      _audioCtx=new AC();
+    }
+    // resume() rejects rather than throwing, so a bare try/catch would still
+    // surface an unhandled rejection under an autoplay policy block.
+    if(_audioCtx.state==='suspended'&&_audioCtx.resume){
+      const r=_audioCtx.resume();
+      if(r&&r.catch)r.catch(()=>{});
+    }
+  }catch(e){}
+}
+['touchend','click','keydown'].forEach(ev=>
+  document.addEventListener(ev,unlockAudio,{passive:true})
+);
+
+const CHIME_NOTES={
+  msg:   [[660,0,.10],[880,.08,.16]],                 // soft two-note rise
+  poll:  [[520,0,.12],[700,.10,.18]],
+  win:   [[520,0,.10],[660,.09,.10],[880,.18,.26]],   // little fanfare
+  tap:   [[900,0,.05]]
+};
+function chime(kind='msg'){
+  if(!prefs.sound)return;
+  unlockAudio();
+  // Scheduling against a context that is still resuming is fine - the notes
+  // play once it starts. Bailing out on anything but 'running' silently
+  // swallowed the first chime after the context was created.
+  if(!_audioCtx||_audioCtx.state==='closed')return;
+  const notes=CHIME_NOTES[kind]||CHIME_NOTES.msg;
+  const t0=_audioCtx.currentTime;
+  notes.forEach(([freq,at,dur])=>{
+    const osc=_audioCtx.createOscillator();
+    const gain=_audioCtx.createGain();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(freq,t0+at);
+    // Quick attack, exponential tail - a square envelope clicks audibly
+    gain.gain.setValueAtTime(0.0001,t0+at);
+    gain.gain.exponentialRampToValueAtTime(0.18,t0+at+0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001,t0+at+dur);
+    osc.connect(gain);gain.connect(_audioCtx.destination);
+    osc.start(t0+at);osc.stop(t0+at+dur+0.02);
+  });
+}
+
+async function requestNotifyPermission(){
+  if(!('Notification' in window)){ toast('This browser has no notification support'); return false; }
+  if(Notification.permission==='denied'){
+    await appAlert('Notifications are blocked for this site. Turn them back on in your browser settings for CMAS Social.');
+    return false;
+  }
+  if(Notification.permission!=='granted'){
+    const res=await Notification.requestPermission();
+    if(res!=='granted')return false;
+  }
+  return true;
+}
+
+/* Only fires when the app is not the page you're looking at - otherwise
+   the in-app badge and chime already tell you. */
+function systemNotify(title,body,tag){
+  if(!prefs.notify||!('Notification' in window))return;
+  if(Notification.permission!=='granted')return;
+  if(!document.hidden)return;
+  try{
+    const nt=new Notification(title,{body,tag,icon:FAVICON_URL,badge:FAVICON_URL,renotify:false});
+    nt.onclick=()=>{ window.focus(); nt.close(); };
+  }catch(e){}
+}
+const FAVICON_URL="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%85</text></svg>";
 
 /* ==============================================================
    NATURAL LANGUAGE EVENT PARSER
@@ -1888,13 +1996,27 @@ function startApp() {
     s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];next[c.key]={id:c.key,...v};});
     groups=next;renderGroups();renderGroupOpts();
   });
+  let _pollsPrimed=false;
   db.ref('polls').on('value',s=>{
+    const prevIds=new Set(Object.keys(polls));
     polls={};s.forEach(c=>{polls[c.key]={id:c.key,...c.val()};});
     // First run on this device: treat everything already there as seen,
     // otherwise the whole back catalogue lights up as new
     if(localStorage.getItem('cmas-seenpolls')===null){
       markAllPollsSeen();
     }
+    if(_pollsPrimed){
+      const added=Object.values(polls).filter(p=>!prevIds.has(p.id)&&p.creator!==me.name);
+      if(added.length){
+        chime('poll');
+        systemNotify(
+          added.length===1?'New poll from '+added[0].creator:added.length+' new polls',
+          added.length===1?added[0].title:'',
+          'cmas-poll'
+        );
+      }
+    }
+    _pollsPrimed=true;
     renderPolls();
     renderUnreadBadges();
     if(activePollId&&polls[activePollId])renderPollDetail(activePollId);
@@ -2734,8 +2856,10 @@ function timeAgo(ts){
   return Math.floor(s/86400)+'d ago';
 }
 
+let _chatPrimed=false;     // skip the first snapshot, which is all history
 function attachChatMetaListener(){
   db.ref('chat').on('value',snap=>{
+    const prev=chatMeta;
     const next={};
     snap.forEach(evNode=>{
       const msgs=evNode.child('messages');
@@ -2755,6 +2879,28 @@ function attachChatMetaListener(){
       }
     });
     chatMeta=next;
+
+    // Announce genuinely new messages from other people
+    if(_chatPrimed){
+      let fresh=0,who='',what='';
+      Object.keys(next).forEach(eid=>{
+        const before=prev[eid], after=next[eid];
+        if(!after||!after.lastTs)return;
+        if(before&&after.lastTs<=before.lastTs)return;
+        if(after.newest===me.name)return;              // our own message
+        if(eid===detailId&&!document.hidden)return;    // thread already open
+        fresh++;who=after.newest;what=(events[eid]&&events[eid].title)||'a thread';
+      });
+      if(fresh){
+        chime('msg');
+        systemNotify(
+          fresh===1?who+' messaged':fresh+' new messages',
+          fresh===1?'in '+what:'across '+fresh+' threads',
+          'cmas-chat'
+        );
+      }
+    }
+    _chatPrimed=true;
     renderUnreadBadges();
   });
 }
@@ -3718,15 +3864,17 @@ function openNewWheel(){
   currentWheelId=null;wheelItems=['','',''];
   document.getElementById('wheel-panel-title').textContent='New Wheel';
   document.getElementById('wheel-result').textContent='';
+  setWheelAngle(document.getElementById('wheel-canvas'),0);
   renderWheelItems();drawWheel();openPanel('panel-wheel');
 }
 
 function openWheel(id){
   const w=wheels[id];if(!w)return;
   currentWheelId=id;
-  wheelItems=w.items?Object.values(w.items):[];
+  wheelItems=w.items?Object.values(w.items).map(i=>typeof i==='string'?i:''):[];
   document.getElementById('wheel-panel-title').textContent=w.name;
   document.getElementById('wheel-result').textContent='';
+  setWheelAngle(document.getElementById('wheel-canvas'),0);
   renderWheelItems();drawWheel();openPanel('panel-wheel');
 }
 
@@ -3763,44 +3911,92 @@ async function saveWheel(){
 }
 
 const WHEEL_COLORS=['#f06b6b','#f0a06b','#f0d76b','#6bf07a','#6bf0d7','#6bb8f0','#8b6bf0','#d76bf0','#f06bb8','#f09b6b','#6bf0a0','#6b8bf0','#c06bf0','#6bf0e0'];
+const WHEEL_SPIN_MS=4200;
+
+/* Uniform integer in [0,n). Uses the CSPRNG with rejection sampling so
+   there is no modulo bias, and so the result can't be predicted from the
+   previous one the way a seeded Math.random sequence can. */
+function wheelPick(n){
+  if(window.crypto&&crypto.getRandomValues){
+    const limit=Math.floor(0xFFFFFFFF/n)*n;
+    const buf=new Uint32Array(1);
+    do{ crypto.getRandomValues(buf); }while(buf[0]>=limit);
+    return buf[0]%n;
+  }
+  return Math.floor(Math.random()*n);
+}
+
+/* Decide the winner FIRST, then animate to it.
+   The old code did the reverse - spin to a random angle, then work out
+   which slice the pointer ended on - which meant the animation and the
+   result could ever so slightly disagree, and made the whole thing much
+   harder to reason about. Returns the winning index.
+   The canvas keeps its own running angle in a data attribute so each spin
+   continues from where the last one stopped instead of snapping to 0. */
+function spinCanvasTo(cv,n,idx){
+  const slice=360/n;
+  // Land in the middle 70% of the slice, never on a boundary
+  const within=slice*(0.15+Math.random()*0.70);
+  const target=(360-(idx*slice+within)+360)%360;
+  const cur=parseFloat(cv.dataset.angle||'0');
+  const turns=6+Math.floor(Math.random()*3);           // 6-8 full turns
+  const next=cur-(cur%360)+turns*360+target;           // always ahead of cur
+  cv.dataset.angle=String(next);
+  cv.style.transition=`transform ${WHEEL_SPIN_MS}ms cubic-bezier(.17,.3,.3,1)`;
+  cv.style.transform=`rotate(${next}deg)`;
+  return target;
+}
+
+/* Run cb when the spin transition actually ends, with a timer as a
+   backstop for when the tab is backgrounded and transitionend never fires. */
+function onSpinEnd(cv,cb){
+  let done=false;
+  const finish=()=>{ if(done)return; done=true; cv.removeEventListener('transitionend',finish); cb(); };
+  cv.addEventListener('transitionend',finish);
+  setTimeout(finish,WHEEL_SPIN_MS+250);
+}
+
+/* Restore a canvas to a resting angle without animating */
+function setWheelAngle(cv,deg){
+  if(!cv)return;
+  cv.style.transition='none';
+  cv.style.transform=`rotate(${deg}deg)`;
+  cv.dataset.angle=String(deg);
+  cv.offsetHeight;
+}
+
+/* Items that actually make it onto the wheel. The `i&&` guard matters:
+   a wheel saved with a gap in its keys comes back from Firebase with
+   holes, and `i.trim()` on one of those throws. */
+function liveWheelItems(list){
+  return (list||[]).filter(i=>typeof i==='string'&&i.trim());
+}
 
 function drawWheel(){
-  drawWheelOn('wheel-canvas',wheelItems.filter(i=>i.trim()),280);
+  drawWheelOn('wheel-canvas',liveWheelItems(wheelItems),280);
 }
 
 function spinWheel(){
   if(wheelSpinning)return;
-  const items=wheelItems.filter(i=>i.trim());
+  const items=liveWheelItems(wheelItems);
   if(items.length<2){appAlert('Need at least 2 items');return;}
 
   wheelSpinning=true;
+  const btn=document.getElementById('wheel-spin-btn');
+  if(btn){btn.disabled=true;btn.textContent='Spinning…';}
   document.getElementById('wheel-result').textContent='';
   const canvas=document.getElementById('wheel-canvas');
-  const spins=5+Math.random()*5;
-  const extraDeg=Math.random()*360;
-  const totalDeg=spins*360+extraDeg;
 
-  canvas.style.transition='none';
-  canvas.style.transform='rotate(0deg)';
-  // Force reflow
-  canvas.offsetHeight;
-  canvas.style.transition='transform 4s cubic-bezier(.2,.8,.3,1)';
-  canvas.style.transform=`rotate(${totalDeg}deg)`;
+  const idx=wheelPick(items.length);
+  spinCanvasTo(canvas,items.length,idx);
+  buzz(15);
 
-  setTimeout(()=>{
-    const finalDeg=totalDeg%360;
-    // Pointer is at top (0 deg). Wheel rotated clockwise by finalDeg.
-    // The slice at the pointer: (360 - finalDeg) mapped to items
-    const slice=360/items.length;
-    const idx=Math.floor(((360-finalDeg)%360)/slice);
+  onSpinEnd(canvas,()=>{
     document.getElementById('wheel-result').textContent='🎉 '+items[idx];
     wheelSpinning=false;
-    // Reset rotation without animation for next spin
-    setTimeout(()=>{
-      canvas.style.transition='none';
-      canvas.style.transform=`rotate(${finalDeg}deg)`;
-    },100);
-  },4200);
+    if(btn){btn.disabled=false;btn.textContent='Spin!';}
+    buzz(30);chime('win');
+  });
 }
 
 /* ==============================================================
@@ -3965,7 +4161,8 @@ const EMOJI_HINTS=[
   [/\b(dinner|lunch|brunch|breakfast|eat|food|restaurant|feed)\b/i,'🍽️'],
   [/\b(birthday|bday|party)\b/i,'🎉'],
   [/\b(movie|cinema|film)\b/i,'🎬'],
-  [/\b(gym|run|ride|training|workout|swim|surf)\b/i,'🏃'],
+  [/\b(bike|bikes|biking|bicycle|cycle|cycling|ride|riding|mtb|spin class)\b/i,'🚴'],
+  [/\b(gym|run|training|workout|swim|surf)\b/i,'🏃'],
   [/\b(footy|game|match|sport|cricket|soccer)\b/i,'⚽'],
   [/\b(gig|concert|music|band)\b/i,'🎵'],
   [/\b(flight|airport|trip|travel|holiday)\b/i,'✈️'],
@@ -3979,7 +4176,7 @@ function guessEmoji(title){
   return '';
 }
 
-const EMOJI_CHOICES=['','🍺','☕','🍽️','🎉','🎬','🏃','⚽','🎵','✈️','💼','🏕️','💍','⛳','🎂','🏖️'];
+const EMOJI_CHOICES=['','🍺','☕','🍽️','🎉','🎬','🏃','🚴','⚽','🎵','✈️','💼','🏕️','💍','⛳','🎂','🏖️'];
 
 function renderEmojiRow(selected){
   const c=document.getElementById('ev-emoji-row');c.innerHTML='';
@@ -4454,9 +4651,7 @@ function renderDetailWheel(eid){
   // Draw it, restoring the resting angle if it's been spun
   drawWheelOn('ev-wheel-canvas',items,190);
   if(res&&typeof res.angle==='number'){
-    const cv=document.getElementById('ev-wheel-canvas');
-    cv.style.transition='none';
-    cv.style.transform=`rotate(${res.angle}deg)`;
+    setWheelAngle(document.getElementById('ev-wheel-canvas'),res.angle);
   }
 }
 
@@ -4482,15 +4677,21 @@ function drawWheelOn(canvasId,items,displaySize){
     ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
     ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=2;ctx.stroke();
 
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(start+slice/2);
+    const mid=start+slice/2;
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(mid);
+    // Slices on the left half would otherwise render their label mirrored,
+    // so flip those 180deg and draw on the far side of the origin.
+    let tx=r*0.62;
+    const norm=Math.atan2(Math.sin(mid),Math.cos(mid));
+    if(Math.abs(norm)>Math.PI/2){ ctx.rotate(Math.PI); tx=-tx; }
     const maxLen=items.length>8?10:items.length>5?14:18;
     const label=item.length>maxLen?item.slice(0,maxLen-1)+'…':item;
     const fontSize=Math.max(10,(items.length>10?12:items.length>6?14:16)*scale);
     ctx.font=`700 ${fontSize}px "Plus Jakarta Sans",sans-serif`;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=Math.max(2,3*scale);ctx.lineJoin='round';
-    ctx.strokeText(label,r*0.62,0);
-    ctx.fillStyle='#fff';ctx.fillText(label,r*0.62,0);
+    ctx.strokeText(label,tx,0);
+    ctx.fillStyle='#fff';ctx.fillText(label,tx,0);
     ctx.restore();
   });
 }
@@ -4538,22 +4739,12 @@ async function spinEventWheel(eid){
   if(btn){btn.disabled=true;btn.textContent='Spinning...';}
   const cv=document.getElementById('ev-wheel-canvas');
 
-  const spins=5+Math.random()*5;
-  const extra=Math.random()*360;
-  const total=spins*360+extra;
-
-  cv.style.transition='none';
-  cv.style.transform='rotate(0deg)';
-  cv.offsetHeight;
-  cv.style.transition='transform 4s cubic-bezier(.2,.8,.3,1)';
-  cv.style.transform=`rotate(${total}deg)`;
+  const idx=wheelPick(items.length);
+  const finalDeg=spinCanvasTo(cv,items.length,idx);
+  const winner=items[idx];
   buzz(15);
 
-  setTimeout(async()=>{
-    const finalDeg=total%360;
-    const slice=360/items.length;
-    const idx=Math.floor(((360-finalDeg)%360)/slice);
-    const winner=items[idx];
+  onSpinEnd(cv,async()=>{
 
     // Save the result so everyone sees it
     await db.ref('events/'+eid+'/wheelResult').set({
@@ -4565,15 +4756,44 @@ async function spinEventWheel(eid){
     });
 
     evWheelSpinning=false;
-    buzz(30);
+    // The events listener fired while we were still spinning, so it skipped
+    // the repaint. Redraw now that the flag is clear, or the panel keeps
+    // showing "Not spun yet" next to a freshly spun wheel.
+    if(detailId===eid)renderDetailWheel(eid);
+    if(btn){btn.disabled=false;btn.textContent='Spin again';}
+    buzz(30);chime('win');
     toast('🎉 '+winner);
-  },4200);
+  });
 }
 
 /* ==============================================================
    SETTINGS
    ============================================================== */
-function openSettings(){openPanel('panel-settings');renderProfileCard();renderRetention();renderCF();renderMembers();}
+function openSettings(){openPanel('panel-settings');renderProfileCard();renderRetention();renderCF();renderMembers();renderPrefs();}
+
+function renderPrefs(){
+  ['sound','vibrate','notify'].forEach(k=>{
+    const el=document.getElementById('pref-'+k);
+    if(el)el.classList.toggle('on',!!prefs[k]);
+  });
+  const note=document.getElementById('pref-notify-note');
+  if(!note)return;
+  if(!('Notification' in window))note.textContent='This browser does not support banner notifications.';
+  else if(Notification.permission==='denied')note.textContent='Blocked by your browser - re-enable it in site settings.';
+  else if(prefs.notify)note.textContent='You will get a banner when a message or poll arrives while the app is closed or in the background.';
+  else note.textContent='';
+}
+
+async function togglePref(k){
+  if(k==='notify'&&!prefs.notify){
+    const ok=await requestNotifyPermission();
+    if(!ok){renderPrefs();return;}
+  }
+  setPref(k,!prefs[k]);
+  renderPrefs();
+  if(k==='sound'&&prefs.sound)chime('tap');
+  if(k==='vibrate'&&prefs.vibrate)buzz(20);
+}
 
 function renderRetention(){
   const c=document.getElementById('s-retention-pills');
@@ -4728,11 +4948,134 @@ async function adminPromote(name){
 /* ==============================================================
    PANELS
    ============================================================== */
-function openPanel(id){document.getElementById(id).classList.add('open');}
-function closePanel(id){
-  document.getElementById(id).classList.remove('open');
+/* Panels are a navigation stack, not just floating sheets.
+   Each open panel pushes a history entry, so the Android back gesture and
+   the browser back button close the top sheet instead of leaving the app.
+   Every panel also gets a back chevron injected at the top left, which is
+   where a thumb can actually reach it on a phone. */
+const panelStack=[];
+
+function _shutPanel(id){
+  const el=document.getElementById(id);
+  if(el)el.classList.remove('open');
   if(id==='panel-detail'){detachChatListener();detailId=null;renderUnreadBadges();}
 }
+
+function openPanel(id){
+  const el=document.getElementById(id);
+  if(!el||el.classList.contains('open'))return;
+  el.classList.add('open');
+  const body=el.querySelector('.panel-body');
+  if(body){body.classList.remove('settling');body.style.transform='';}
+  panelStack.push(id);
+  try{ history.pushState({cmasDepth:panelStack.length},''); }catch(e){}
+}
+
+/* Note: closing never calls history.go(). Unwinding the history
+   asynchronously races with any openPanel() that runs in the same tick -
+   several places here close one sheet and open another back to back - and
+   a lost race leaves the stack out of step with the real history. Instead
+   the stack is reconciled against the entry we land on, which is
+   deterministic. The only cost is an occasional back press that has
+   nothing left to close. */
+function closePanel(id){
+  const i=panelStack.lastIndexOf(id);
+  if(i===-1){ _shutPanel(id); return; }
+  for(let k=panelStack.length-1;k>=i;k--)_shutPanel(panelStack[k]);
+  panelStack.length=i;
+}
+
+/* Back gesture / back button / browser back */
+window.addEventListener('popstate',e=>{
+  // A dialog sits above everything, so it swallows the gesture first
+  const dlg=document.getElementById('modal-dialog');
+  if(dlg&&dlg.classList.contains('open')){
+    modalDismiss();
+    try{ history.pushState({cmasDepth:panelStack.length},''); }catch(err){}
+    return;
+  }
+  const depth=(e.state&&e.state.cmasDepth)||0;
+  if(panelStack.length>depth){
+    while(panelStack.length>depth)_shutPanel(panelStack.pop());
+  } else if(panelStack.length){
+    // Sheets were dismissed by tapping away, so this entry is stale.
+    // Close what is actually on screen rather than doing nothing.
+    _shutPanel(panelStack.pop());
+  }
+});
+
+function closeTopPanel(){
+  const id=panelStack[panelStack.length-1];
+  if(id)closePanel(id);
+}
+
+/* Inject a back chevron into every panel header, and make the grab handle
+   draggable so a sheet can be flicked away the way a native one can. */
+function initPanelChrome(){
+  document.querySelectorAll('.panel').forEach(panel=>{
+    if(panel.id==='modal-dialog')return;
+    const header=panel.querySelector('.panel-header');
+    if(header&&!header.querySelector('.panel-back')){
+      const b=document.createElement('button');
+      b.className='panel-back';
+      b.setAttribute('aria-label','Back');
+      b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+      b.onclick=()=>{buzz(5);closePanel(panel.id);};
+      header.insertBefore(b,header.firstChild);
+      // The old top-right X now duplicates the back chevron, and on a 375px
+      // screen the two together squeeze the title down to an ellipsis.
+      header.querySelectorAll('button').forEach(btn=>{
+        if(btn===b)return;
+        const h=btn.getAttribute('onclick')||'';
+        if(h.indexOf('closePanel')!==-1)btn.remove();
+      });
+    }
+    const handle=panel.querySelector('.panel-handle');
+    if(handle&&!handle.parentElement.classList.contains('panel-grab')){
+      const grab=document.createElement('div');
+      grab.className='panel-grab';
+      handle.parentElement.insertBefore(grab,handle);
+      grab.appendChild(handle);
+      attachSheetDrag(grab,panel);
+    }
+  });
+}
+
+/* Drag the sheet down to dismiss. Only vertical drags on the grab strip
+   count, so it never fights the scrollable content underneath. */
+function attachSheetDrag(grab,panel){
+  const body=panel.querySelector('.panel-body');
+  if(!body)return;
+  let y0=0,dy=0,dragging=false;
+  grab.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    y0=e.touches[0].clientY;dy=0;dragging=true;
+    body.classList.add('dragging');body.classList.remove('settling');
+  },{passive:true});
+  grab.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    dy=Math.max(0,e.touches[0].clientY-y0);
+    body.style.transform=`translateY(${dy}px)`;
+  },{passive:true});
+  const end=()=>{
+    if(!dragging)return;
+    dragging=false;
+    body.classList.remove('dragging');
+    body.classList.add('settling');
+    if(dy>90){ buzz(8); body.style.transform=`translateY(100%)`; closePanel(panel.id); setTimeout(()=>{body.style.transform='';},240); }
+    else body.style.transform='';
+  };
+  grab.addEventListener('touchend',end,{passive:true});
+  grab.addEventListener('touchcancel',end,{passive:true});
+}
+
+/* Escape closes the top sheet on desktop */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  const dlg=document.getElementById('modal-dialog');
+  if(dlg&&dlg.classList.contains('open')){modalDismiss();return;}
+  closeTopPanel();
+});
 
 /* ==============================================================
    SWIPE NAVIGATION (weeks / months)
@@ -4772,6 +5115,7 @@ function initSwipeNav(){
    BOOT
    ============================================================== */
 init();
+initPanelChrome();
 setTimeout(initSwipeNav,500);
 </script>
 </body>
