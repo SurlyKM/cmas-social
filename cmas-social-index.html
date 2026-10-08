@@ -43,6 +43,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js"></script>
 <style>
 /* ============================================================
    THEME TOKENS
@@ -636,6 +637,7 @@ input,select,textarea,button{font-family:var(--font)}
   <div class="gate-card">
     <div class="gate-logo">CMAS <span>Social</span></div>
     <div class="gate-sub">Sign in with your name and recovery code</div>
+    <input id="signin-access" type="password" placeholder="Group access code" autocomplete="off">
     <input id="signin-name" type="text" placeholder="Your display name" autocomplete="off">
     <input id="signin-code" type="text" placeholder="Recovery code (e.g. KFXM-7293)" autocomplete="off" style="font-family:monospace;letter-spacing:.05em;text-transform:uppercase">
     <div id="signin-err" class="gate-err"></div>
@@ -1251,7 +1253,7 @@ input,select,textarea,button{font-family:var(--font)}
           </div>
           <button class="btn btn-sm btn-secondary" onclick="openProfile()">Edit</button>
         </div>
-        <div class="settings-row"><span>Access code</span><span id="s-code" style="font-family:monospace;letter-spacing:.04em"></span></div>
+        <div class="settings-row"><span>Access code</span><span style="display:flex;gap:8px;align-items:center"><span id="s-code" style="font-family:monospace;letter-spacing:.04em"></span><button class="btn btn-sm btn-secondary hidden" id="s-code-btn" onclick="changeAccessCode()">Change</button></span></div>
         <div class="settings-row"><span>Recovery code</span><button class="btn btn-sm btn-secondary" onclick="resetOwnCode()">Reset my code</button></div>
         <div class="settings-row" style="border-bottom:none"><span>Session</span><button class="btn btn-sm btn-danger" onclick="signOut()">Sign out</button></div>
       </div>
@@ -1355,10 +1357,13 @@ function captureDeepLink(){
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
 }
 
-function applyDeepLink(){
+async function applyDeepLink(){
   if(!pendingDeepLink)return;
   const {type,id}=pendingDeepLink;
   pendingDeepLink=null;
+  // Wait for the data rather than guessing how long it takes to arrive; a
+  // fixed delay said "no longer exists" to anyone on a slow connection
+  try{ await db.ref(type==='e'?'events':'polls').once('value'); }catch(e){}
   setTimeout(()=>{
     if(type==='e'){
       const ev=events[id];
@@ -1373,7 +1378,7 @@ function applyDeepLink(){
       switchPlanSection('polls');
       openPollDetail(id);
     }
-  },700); // let the first data snapshot land
+  },0); // after the listeners have handled the same snapshot
 }
 
 function shareUrl(type,id){
@@ -1545,13 +1550,28 @@ function parseEventText(text){
   const result={title:'',date:null,endDate:null,time:null,location:null};
 
   // --- Location: "at X" or "@ X" (take to end of string) ---
-  const locMatch=working.match(/\s(?:at|@)\s+(.+?)\s*$/i);
-  if(locMatch){
-    // Avoid matching "at 7pm" as a location
-    if(!/^\d{1,2}(:\d{2})?\s*(am|pm)?\s*$/i.test(locMatch[1])){
-      result.location=locMatch[1].trim();
-      working=working.slice(0,locMatch.index)+' ';
+  // "at 7pm" is a time, not a place, so skip any "at" followed by one and
+  // use the next. A later "at 7pm" inside the place belongs to the time too:
+  // "Dinner at Mum's at 7pm Friday" -> location "Mum's".
+  const TIME_AFTER_AT=/^(?:\d{1,2}(?:[:.]\d{2})?\s*(?:am|pm)\b|\d{1,2}[:.]\d{2}\b|\d{1,2}\s*$)/i;
+  const atRe=/\s(?:at|@)\s+/gi;
+  let atHit;
+  while((atHit=atRe.exec(working))){
+    const start=atHit.index+atHit[0].length;
+    if(TIME_AFTER_AT.test(working.slice(start)))continue;
+    let loc=working.slice(start), keep='';
+    const tail=loc.match(/\s(?:at|@)\s+(?:\d{1,2}(?:[:.]\d{2})?\s*(?:am|pm)\b|\d{1,2}:\d{2}\b)/i);
+    if(tail){keep=loc.slice(tail.index);loc=loc.slice(0,tail.index);}
+    // Same for trailing days and times: "at The Grand Friday 7pm" -> "The Grand"
+    const trailRe=new RegExp(`\\s(?:(?:next|this)\\s+)?(?:today|tonight|tomorrow|tmrw|tmw|${Object.keys(DAY_WORDS).join('|')}|\\d{1,2}(?:[:.]\\d{2})?\\s*(?:am|pm)|\\d{1,2}:\\d{2})\\s*$`,'i');
+    let trail;
+    while((trail=loc.match(trailRe))){keep=loc.slice(trail.index)+' '+keep;loc=loc.slice(0,trail.index);}
+    loc=loc.trim();
+    if(loc){
+      result.location=loc;
+      working=working.slice(0,atHit.index)+' '+keep+' ';
     }
+    break;
   }
 
   // --- Time: 7pm, 7:30pm, 19:00, 7.30pm ---
@@ -1571,6 +1591,11 @@ function parseEventText(text){
 
   const now=new Date();
   const todayDow=now.getDay();
+  // Compare dates against midnight, not the current instant, or a date
+  // typed for today counts as already past and rolls over to next year
+  const todayMid=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  // "31/9" or "30 Feb" would otherwise be stored as a key no calendar cell matches
+  const realDate=(y,m,d)=>m>=0&&m<12&&d>=1&&d<=new Date(y,m+1,0).getDate();
   const DAYRE='sunday|sun|monday|mon|tuesday|tues|tue|wednesday|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat';
 
   // --- DATE RANGES first (before single-date matching) ---
@@ -1599,10 +1624,12 @@ function parseEventText(text){
       const d1=parseInt(numRange[1],10), d2=parseInt(numRange[2],10);
       const mon=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(numRange[3].toLowerCase().slice(0,3));
       let yr=now.getFullYear();
-      if(new Date(yr,mon,d1)<now)yr++;
-      result.date=dk(yr,mon,d1);
-      result.endDate=dk(yr,mon,d2);
-      working=working.replace(numRange[0],' ');
+      if(new Date(yr,mon,d1)<todayMid)yr++;
+      if(d2>=d1&&realDate(yr,mon,d1)&&realDate(yr,mon,d2)){
+        result.date=dk(yr,mon,d1);
+        result.endDate=dk(yr,mon,d2);
+        working=working.replace(numRange[0],' ');
+      }
     }
   }
 
@@ -1613,10 +1640,13 @@ function parseEventText(text){
       const d1=parseInt(slashRange[1],10),m1=parseInt(slashRange[2],10)-1;
       const d2=parseInt(slashRange[3],10),m2=parseInt(slashRange[4],10)-1;
       let yr=now.getFullYear();
-      if(new Date(yr,m1,d1)<now)yr++;
-      result.date=dk(yr,m1,d1);
-      result.endDate=dk(m2<m1?yr+1:yr,m2,d2);
-      working=working.replace(slashRange[0],' ');
+      if(new Date(yr,m1,d1)<todayMid)yr++;
+      const yr2=m2<m1?yr+1:yr;
+      if(realDate(yr,m1,d1)&&realDate(yr2,m2,d2)){
+        result.date=dk(yr,m1,d1);
+        result.endDate=dk(yr2,m2,d2);
+        working=working.replace(slashRange[0],' ');
+      }
     }
   }
 
@@ -1642,11 +1672,16 @@ function parseEventText(text){
   else if(/\bfor\s+the\s+weekend\b/i.test(working)||/\bthis\s+weekend\b/i.test(working)){
     durationDays=3;
     working=working.replace(/\b(?:for\s+the|this)\s+weekend\b/i,' ');
-    // Weekend = next Friday if no other date given
+    // Weekend = next Friday if no other date given. If it's already the
+    // weekend, run from today to Sunday rather than jumping a week ahead.
     if(!result.date){
-      let diff=5-todayDow; if(diff<0)diff+=7;
-      const d=addDays(now,diff);
-      result.date=dk(d.getFullYear(),d.getMonth(),d.getDate());
+      if(todayDow===6||todayDow===0){
+        result.date=dk(now.getFullYear(),now.getMonth(),now.getDate());
+        durationDays=todayDow===6?2:1;
+      } else {
+        const d=addDays(now,5-todayDow);
+        result.date=dk(d.getFullYear(),d.getMonth(),d.getDate());
+      }
     }
   }
 
@@ -1678,9 +1713,12 @@ function parseEventText(text){
         if(dmMatch){
           const day=parseInt(dmMatch[1],10), mon=parseInt(dmMatch[2],10)-1;
           let yr=now.getFullYear();
-          if(new Date(yr,mon,day)<now)yr++;
-          result.date=dk(yr,mon,day);
-          working=working.replace(dmMatch[0],' ');
+          if(new Date(yr,mon,day)<todayMid)yr++;
+          // Not a real date: leave it in the title so the missing date chip shows
+          if(realDate(yr,mon,day)){
+            result.date=dk(yr,mon,day);
+            working=working.replace(dmMatch[0],' ');
+          }
         } else {
           const monMatch=working.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i)
                        ||working.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
@@ -1690,9 +1728,11 @@ function parseEventText(text){
             else{monStr=monMatch[1];day=parseInt(monMatch[2],10);}
             const mon=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(monStr.toLowerCase().slice(0,3));
             let yr=now.getFullYear();
-            if(new Date(yr,mon,day)<now)yr++;
-            result.date=dk(yr,mon,day);
-            working=working.replace(monMatch[0],' ');
+            if(new Date(yr,mon,day)<todayMid)yr++;
+            if(realDate(yr,mon,day)){
+              result.date=dk(yr,mon,day);
+              working=working.replace(monMatch[0],' ');
+            }
           }
         }
       }
@@ -1794,6 +1834,12 @@ const FIREBASE_CONFIG = {
   appId:             "1:655550772180:web:35eac4d4a7ebe1b5e65c41"
 };
 
+/* reCAPTCHA v3 site key for Firebase App Check. Leave empty to run without it.
+   To turn it on: Firebase console -> App Check -> register the web app with
+   reCAPTCHA v3, paste the site key here and deploy, then once the metrics show
+   requests as verified, click Enforce for Realtime Database. */
+const APP_CHECK_SITE_KEY = "";
+
 /* ==============================================================
    CONSTANTS
    ============================================================== */
@@ -1821,6 +1867,9 @@ function dk(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padS
 function parseDate(s){ const p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
 function getWeekStart(d){ const day=d.getDay(); const diff=(day===0?-6:1-day); const r=new Date(d); r.setDate(r.getDate()+diff); return r; }
 function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+/* Same day n months on, clamped to the end of the month, so a series that
+   starts on the 31st doesn't drift into the following month */
+function addMonths(d,n){ const y=d.getFullYear(), m=d.getMonth()+n; return new Date(y,m,Math.min(d.getDate(),new Date(y,m+1,0).getDate())); }
 function encKey(s){ return s.replace(/[.$#\[\]/]/g,'_'); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
@@ -1829,6 +1878,37 @@ function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 /* Escape for use inside a single-quoted JS string in an inline handler */
 function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' '); }
+
+/* Anyone in the group can write anything to the database, so the fields that
+   get dropped straight into markup (colours in style attributes, emoji, times,
+   ids inside onclick handlers) are normalised once as each snapshot arrives.
+   Free text still goes through esc() wherever it's rendered. */
+const SAFE_KEY=/^[A-Za-z0-9_-]+$/;
+function safeColor(c){ return /^#[0-9a-f]{3,8}$/i.test(c||'')?c:'#888'; }
+function safeEmoji(e){ return typeof e==='string'&&e.length<=16&&!/[<>&"'`\\]/.test(e)?e:''; }
+function oneOf(v,list,dflt){ return list.includes(v)?v:dflt; }
+const REPEATS=['none','weekly','fortnightly','monthly'];
+function cleanUser(u){ u.color=safeColor(u.color); return u; }
+function cleanEvent(ev){
+  ev.emoji=safeEmoji(ev.emoji);
+  ev.time=/^\d{2}:\d{2}$/.test(ev.time||'')?ev.time:'';
+  ev.repeat=oneOf(ev.repeat,REPEATS,'none');
+  return ev;
+}
+function cleanPoll(p){
+  p.type=oneOf(p.type,['date','general'],'general');
+  if(p.votes&&typeof p.votes==='object'){
+    Object.values(p.votes).forEach(uv=>{
+      if(uv&&typeof uv==='object')Object.keys(uv).forEach(k=>{ if(!['yes','maybe','no'].includes(uv[k]))delete uv[k]; });
+    });
+  }
+  return p;
+}
+function cleanAway(a){
+  a.part=oneOf(a.part,['all','am','pm'],'all');
+  a.repeat=oneOf(a.repeat,REPEATS,'none');
+  return a;
+}
 
 /* Firebase RTDB keys cannot contain . $ # [ ] / or control chars.
    Names are used directly as keys for rsvps and poll votes, so reject them up front. */
@@ -1883,9 +1963,9 @@ function generateCode() {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I or O to avoid confusion
   const digits = '0123456789';
   let code = '';
-  for(let i=0;i<4;i++) code += letters[Math.floor(Math.random()*letters.length)];
+  for(let i=0;i<4;i++) code += letters[randomIndex(letters.length)];
   code += '-';
-  for(let i=0;i<4;i++) code += digits[Math.floor(Math.random()*digits.length)];
+  for(let i=0;i<4;i++) code += digits[randomIndex(digits.length)];
   return code;
 }
 
@@ -1899,6 +1979,9 @@ function init() {
     return;
   }
   firebase.initializeApp(FIREBASE_CONFIG);
+  // App Check proves requests come from this site rather than a script that
+  // copied the config. Off until a reCAPTCHA v3 site key is filled in above.
+  if (APP_CHECK_SITE_KEY) firebase.appCheck().activate(APP_CHECK_SITE_KEY, true);
   db = firebase.database();
 
   // Every read and write requires an auth token, so sign in first.
@@ -1913,35 +1996,75 @@ function init() {
     });
 }
 
-function bootApp(){
-  db.ref('config').once('value').then(snap => {
-    if (!snap.exists()) {
-      showScreen('gate-first');
-      renderColors('first-colors');
-      return;
-    }
-    appCfg = snap.val();
-    const stored = localStorage.getItem('cmas-user');
-    if (stored) {
-      try {
-        const p = JSON.parse(stored);
-        db.ref('users/'+encKey(p.name)).once('value').then(u => {
-          if (u.exists()) { me = u.val(); claimUid(); startApp(); }
-          else showScreen('gate-welcome');
-        });
-      } catch(e) { showScreen('gate-welcome'); }
-    } else {
-      showScreen('gate-welcome');
-    }
-  }).catch(e=>{
-    document.getElementById('loading').innerHTML =
-      '<div style="max-width:360px"><div style="font-size:18px;font-weight:700;margin-bottom:6px">Can\'t read data</div>'+
-      '<div style="color:var(--text-dim);font-size:13px">'+esc(e.message)+'</div></div>';
-  });
+function showLoadError(e){
+  document.getElementById('loading').innerHTML =
+    '<div style="max-width:360px"><div style="font-size:18px;font-weight:700;margin-bottom:6px">Can\'t read data</div>'+
+    '<div style="color:var(--text-dim);font-size:13px">'+esc(e.message)+'</div></div>';
 }
 
-/* Record this device's anon uid against the account, so rules can
-   tie writes back to a real identity later on. */
+function isDenied(e){ return /permission/i.test((e&&(e.code||e.message))||''); }
+
+function storedUser(){
+  try{ const p=JSON.parse(localStorage.getItem('cmas-user')||'null'); return p&&p.name?p:null; }
+  catch(e){ return null; }
+}
+
+/* ==============================================================
+   MEMBERSHIP
+   The database rules only let a device in once members/<its uid> exists.
+   Writing that entry needs either the group access code, which the rules
+   compare against the copy in config (unreadable to non-members), or the
+   name of an account that already lists this device's uid. The second
+   path means devices that were signed in before this check existed get
+   through without anyone having to type the code again.
+   Returns null on success, or the error.
+   ============================================================== */
+async function enrol(proof){
+  try{ await db.ref('members/'+authUid).set(proof); return null; }
+  catch(e){ return e; }
+}
+
+let resumeAfterJoin=false;   // a signed-in device that only needs the access code
+
+async function bootApp(retried){
+  // config is readable when it doesn't exist yet (first run) or once this
+  // device is a member. Permission denied therefore means "not a member".
+  let snap=null;
+  try{ snap=await db.ref('config').once('value'); }
+  catch(e){ if(!isDenied(e)){ showLoadError(e); return; } }
+
+  if(snap&&!snap.exists()){
+    showScreen('gate-first');
+    renderColors('first-colors');
+    return;
+  }
+
+  const stored=storedUser();
+  if(!snap){
+    if(stored&&!retried&&!(await enrol(encKey(stored.name)))){ bootApp(true); return; }
+    if(stored){
+      resumeAfterJoin=true;
+      document.querySelector('#gate-join .gate-sub').textContent='Enter the group access code to continue as '+stored.name;
+      showGateJoin();
+      return;
+    }
+    showScreen('gate-welcome');
+    return;
+  }
+
+  appCfg=snap.val();
+  if(stored){
+    try{
+      const u=await db.ref('users/'+encKey(stored.name)).once('value');
+      if(u.exists()){ me=cleanUser(u.val()); claimUid(); startApp(); return; }
+    }catch(e){ showLoadError(e); return; }
+  }
+  showScreen('gate-welcome');
+}
+
+/* Record this device's anon uid against the account. The membership rules
+   accept it as proof on this device later, so it's the reason a signed-in
+   device never has to re-enter the access code. */
 function claimUid(){
   if(!me||!authUid)return;
   const uids=me.uids||{};
@@ -1962,7 +2085,12 @@ function showScreen(id) {
    ============================================================== */
 function showGateWelcome(){ showScreen('gate-welcome'); }
 function showGateJoin(){ showScreen('gate-join'); document.getElementById('join-code').focus(); }
-function showGateSignin(){ showScreen('gate-signin'); document.getElementById('signin-name').focus(); }
+function showGateSignin(){
+  // A device that isn't a member yet has to give the access code as well
+  document.getElementById('signin-access').classList.toggle('hidden',!!appCfg);
+  showScreen('gate-signin');
+  document.getElementById(appCfg?'signin-name':'signin-access').focus();
+}
 
 let selColor = COLORS[0];
 function renderColors(id) {
@@ -1976,11 +2104,32 @@ function renderColors(id) {
   });
 }
 
+/* Prove the access code to the database and load config. Under rules that
+   predate the members check, the write is refused for everyone, so fall
+   back to comparing against the config we could already read.
+   Returns an error message, or null when in. */
+async function joinWithCode(code){
+  if(appCfg&&appCfg.accessCode){
+    if(code!==appCfg.accessCode)return 'Wrong code';
+    await enrol(code);
+    return null;
+  }
+  const e=await enrol(code);
+  if(e)return isDenied(e)?'Wrong code':'Could not connect: '+e.message;
+  try{ appCfg=(await db.ref('config').once('value')).val(); }
+  catch(e2){ return 'Could not connect: '+e2.message; }
+  return null;
+}
+
 // Join: enter access code
-function submitJoinCode() {
+async function submitJoinCode() {
   const code = document.getElementById('join-code').value.trim();
-  if (!code) { document.getElementById('join-err').textContent='Enter the access code'; return; }
-  if (code !== appCfg.accessCode) { document.getElementById('join-err').textContent='Wrong code'; return; }
+  const err = document.getElementById('join-err');
+  if (!code) { err.textContent='Enter the access code'; return; }
+  err.textContent='';
+  const problem = await joinWithCode(code);
+  if (problem) { err.textContent=problem; return; }
+  if (resumeAfterJoin) { resumeAfterJoin=false; bootApp(); return; }
   showScreen('gate-profile');
   renderColors('profile-colors');
 }
@@ -2004,10 +2153,21 @@ async function submitProfile() {
 }
 
 async function confirmRecovery() {
+  // First-time setup has already saved the account; it only shows the code
+  if (!pendingRecovery || !pendingRecovery.name) { pendingRecovery = null; startApp(); return; }
+
   const { name, color, rec } = pendingRecovery;
   const user = { name, color, closeFriends:{}, codeHash: rec.codeHash, codeSalt: rec.codeSalt, created: Date.now() };
   if(authUid)user.uids={[authUid]:Date.now()};
-  await db.ref('users/'+encKey(name)).set(user);
+  // A transaction, so two people picking the same name at once can't
+  // overwrite each other: whoever lands second is sent back to pick again
+  const res = await db.ref('users/'+encKey(name)).transaction(cur => cur===null ? user : undefined);
+  if (!res.committed) {
+    pendingRecovery = null;
+    showScreen('gate-profile');
+    document.getElementById('profile-err').textContent='Someone just took that name, try another';
+    return;
+  }
   me = user;
   localStorage.setItem('cmas-user', JSON.stringify({name}));
 
@@ -2027,16 +2187,26 @@ async function confirmRecovery() {
 
 // Sign in (existing user, new device)
 async function submitSignin() {
+  const err = document.getElementById('signin-err');
   const name = document.getElementById('signin-name').value.trim();
   const code = document.getElementById('signin-code').value.trim().toUpperCase();
-  if (!name||!code) { document.getElementById('signin-err').textContent='Enter both fields'; return; }
+  const needAccess = !appCfg;
+  const access = document.getElementById('signin-access').value.trim();
+  if (!name||!code||(needAccess&&!access)) { err.textContent=needAccess?'Enter all three fields':'Enter both fields'; return; }
+  err.textContent='';
+
+  if (needAccess) {
+    const problem = await joinWithCode(access);
+    if (problem) { err.textContent=problem==='Wrong code'?'Wrong access code':problem; return; }
+    document.getElementById('signin-access').classList.add('hidden');
+  }
 
   const snap = await db.ref('users/'+encKey(name)).once('value');
-  if (!snap.exists()) { document.getElementById('signin-err').textContent='User not found'; return; }
+  if (!snap.exists()) { err.textContent='User not found'; return; }
 
   const user = snap.val();
   const ok = await verifyCode(user, code);
-  if (!ok) { document.getElementById('signin-err').textContent='Wrong recovery code'; return; }
+  if (!ok) { err.textContent='Wrong recovery code'; return; }
 
   // Quietly upgrade accounts still on the old unsalted hash
   if(!user.codeSalt){
@@ -2045,7 +2215,7 @@ async function submitSignin() {
     user.codeHash=rec.codeHash; user.codeSalt=rec.codeSalt;
   }
 
-  me = user;
+  me = cleanUser(user);
   localStorage.setItem('cmas-user', JSON.stringify({name}));
   claimUid();
   startApp();
@@ -2055,26 +2225,35 @@ async function submitSignin() {
 async function submitFirst() {
   const code = document.getElementById('first-code').value.trim();
   const name = document.getElementById('first-name').value.trim();
-  if (!code||code.length<3) { document.getElementById('first-err').textContent='Code needs 3+ characters'; return; }
+  const err = document.getElementById('first-err');
+  // The access code is the only thing keeping outsiders out, so make it
+  // long enough that it can't just be guessed
+  if (code.length<8) { err.textContent='Code needs 8+ characters'; return; }
   const nerr = nameError(name);
-  if (nerr) { document.getElementById('first-err').textContent=nerr; return; }
+  if (nerr) { err.textContent=nerr; return; }
 
-  await db.ref('config').set({ accessCode:code, created:Date.now() });
-  appCfg = { accessCode:code };
+  try {
+    await db.ref('config').set({ accessCode:code, created:Date.now() });
+    appCfg = { accessCode:code };
+    const e = await enrol(code);
+    if (e && !isDenied(e)) throw e;
 
-  await db.ref('groups').push().set({ name:'Everyone', members:{0:name}, created:Date.now() });
+    await db.ref('groups').push().set({ name:'Everyone', members:{0:name}, created:Date.now() });
 
-  const recoveryCode = generateCode();
-  const rec = await makeCodeRecord(recoveryCode);
-  const user = { name, color:selColor, closeFriends:{}, codeHash:rec.codeHash, codeSalt:rec.codeSalt, admin:true, created:Date.now() };
-  if(authUid)user.uids={[authUid]:Date.now()};
-  await db.ref('users/'+encKey(name)).set(user);
-  me = user;
-  localStorage.setItem('cmas-user', JSON.stringify({name}));
+    const recoveryCode = generateCode();
+    const rec = await makeCodeRecord(recoveryCode);
+    const user = { name, color:selColor, closeFriends:{}, codeHash:rec.codeHash, codeSalt:rec.codeSalt, admin:true, created:Date.now() };
+    if(authUid)user.uids={[authUid]:Date.now()};
+    await db.ref('users/'+encKey(name)).set(user);
+    me = user;
+    localStorage.setItem('cmas-user', JSON.stringify({name}));
 
-  pendingRecovery = { code: recoveryCode };
-  document.getElementById('recovery-display').textContent = recoveryCode;
-  showScreen('gate-recovery');
+    pendingRecovery = { code: recoveryCode };
+    document.getElementById('recovery-display').textContent = recoveryCode;
+    showScreen('gate-recovery');
+  } catch(e) {
+    err.textContent = isDenied(e) ? 'This group has already been set up. Reload to join it.' : 'Something went wrong: '+e.message;
+  }
 }
 
 /* ==============================================================
@@ -2090,13 +2269,13 @@ function startApp() {
   else if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}
 
   db.ref('users').on('value',s=>{
-    users={};s.forEach(c=>{users[c.val().name]=c.val();});
+    users={};s.forEach(c=>{const u=c.val();if(u&&u.name)users[u.name]=cleanUser(u);});
     // Keep our own record in sync (e.g. admin promoted us)
     if(me&&users[me.name])me={...me,...users[me.name]};
     renderAll();
   });
   db.ref('events').on('value',s=>{
-    events={};s.forEach(c=>{events[c.key]={id:c.key,...c.val()};});
+    events={};s.forEach(c=>{if(SAFE_KEY.test(c.key))events[c.key]=cleanEvent({id:c.key,...c.val()});});
     // First run on this device: treat what's already there as seen,
     // otherwise the whole back catalogue lights up at once.
     if(localStorage.getItem('cmas-seenplans')===null)markAllPlansSeen();
@@ -2109,13 +2288,13 @@ function startApp() {
   });
   db.ref('groups').on('value',s=>{
     const next={};
-    s.forEach(c=>{const v=c.val();v.members=v.members?Object.values(v.members):[];next[c.key]={id:c.key,...v};});
+    s.forEach(c=>{const v=c.val();if(!v)return;v.members=v.members?Object.values(v.members):[];next[c.key]={id:c.key,...v};});
     groups=next;renderGroups();renderGroupOpts();
   });
   let _pollsPrimed=false;
   db.ref('polls').on('value',s=>{
     const prevIds=new Set(Object.keys(polls));
-    polls={};s.forEach(c=>{polls[c.key]={id:c.key,...c.val()};});
+    polls={};s.forEach(c=>{if(SAFE_KEY.test(c.key))polls[c.key]=cleanPoll({id:c.key,...c.val()});});
     // First run on this device: treat everything already there as seen,
     // otherwise the whole back catalogue lights up as new
     if(localStorage.getItem('cmas-seenpolls')===null){
@@ -2138,13 +2317,13 @@ function startApp() {
     if(activePollId&&polls[activePollId])renderPollDetail(activePollId);
   });
   db.ref('wheels').on('value',s=>{
-    wheels={};s.forEach(c=>{wheels[c.key]={id:c.key,...c.val()};});
+    wheels={};s.forEach(c=>{if(SAFE_KEY.test(c.key))wheels[c.key]={id:c.key,...c.val()};});
     renderWheelSection();
     if(detailId&&events[detailId]&&!evWheelSpinning)renderDetailWheel(detailId);
   });
 
   db.ref('away').on('value',s=>{
-    away={};s.forEach(c=>{away[c.key]={id:c.key,...c.val()};});
+    away={};s.forEach(c=>{if(SAFE_KEY.test(c.key))away[c.key]=cleanAway({id:c.key,...c.val()});});
     renderAvail();
     if(document.getElementById('panel-away').classList.contains('open'))renderAwayList();
   });
@@ -2177,13 +2356,20 @@ function renderAll(){ renderHeaderAvatar(); renderWeek(); renderMonth(); renderA
 /* ==============================================================
    PRESENCE
    ============================================================== */
+let _presenceBeat=null, _serverOffset=0;
 function setupPresence(){
   const connRef=firebase.database().ref('.info/connected');
   const myRef=db.ref('presence/'+sessionId);
   connRef.on('value',s=>{if(s.val()===true){myRef.set({name:me.name,color:me.color,ts:firebase.database.ServerValue.TIMESTAMP});myRef.onDisconnect().remove();}});
+  // The timestamp was only ever written on connect, so anyone online for
+  // more than two minutes dropped off everyone else's list. Keep it fresh.
+  clearInterval(_presenceBeat);
+  _presenceBeat=setInterval(()=>{myRef.child('ts').set(firebase.database.ServerValue.TIMESTAMP).catch(()=>{});},60000);
+  // ts is server time, so compare against server time, not this device's clock
+  db.ref('.info/serverTimeOffset').on('value',s=>{_serverOffset=s.val()||0;});
   db.ref('presence').on('value',s=>{
-    const now=Date.now(), seen=new Set(), peers=[];
-    s.forEach(c=>{const p=c.val();if(p.name&&!seen.has(p.name)&&(now-(p.ts||0))<120000){seen.add(p.name);peers.push(p);}});
+    const now=Date.now()+_serverOffset, seen=new Set(), peers=[];
+    s.forEach(c=>{const p=c.val();if(p.name&&!seen.has(p.name)&&(now-(p.ts||0))<150000){seen.add(p.name);peers.push(p);}});
     const bar=document.getElementById('online-bar'),names=document.getElementById('online-names');
     if(peers.length<2){bar.classList.remove('show');return;}
     bar.classList.add('show');
@@ -2462,7 +2648,7 @@ function awayDateKeys(a){
   const occurrences=rep==='none'?1:26;
   for(let i=0;i<occurrences;i++){
     let start;
-    if(rep==='monthly')start=new Date(base.getFullYear(),base.getMonth()+i,base.getDate());
+    if(rep==='monthly')start=addMonths(base,i);
     else if(rep==='weekly')start=addDays(base,7*i);
     else if(rep==='fortnightly')start=addDays(base,14*i);
     else start=base;
@@ -2505,6 +2691,16 @@ function buildAvailability(){
       const day=touch(k);
       const part=a.part||'all';
       const state=part==='all'?'away':part;
+      const prev=day[a.person];
+      if(part!=='all'&&prev){
+        // A half-day away mustn't hide an all-day commitment
+        if(prev.state==='busy'||prev.state==='away')return;
+        // Away the morning and the afternoon is away all day
+        if((prev.state==='am'||prev.state==='pm')&&prev.state!==part){
+          day[a.person]={state:'away',reason:a.reason||'Away',isAway:true,part:'all'};
+          return;
+        }
+      }
       day[a.person]={state,reason:a.reason||'Away',isAway:true,part};
     });
   });
@@ -2766,7 +2962,8 @@ async function convertEventToAway(id){
   const isMine=ev.creator===me.name;
   if(!isMine&&!isAdmin()){toast('Only the creator or an admin can convert this');return;}
 
-  const hasChat=chatMsgs[id]&&chatMsgs[id].length;
+  // chatMsgs only fills in for threads that have been opened; chatMeta covers all of them
+  const hasChat=chatMeta[id]&&chatMeta[id].count;
   const rsvpCount=ev.rsvps?Object.keys(ev.rsvps).length:0;
   let msg=isMine
     ? 'Convert "'+ev.title+'" to an away block?'
@@ -3146,6 +3343,9 @@ function retentionDays(){
 async function runRetentionSweep(){
   const days=retentionDays();
   if(!days||days<=0)return;                 // disabled
+  // Deletes are decided by this device's clock, and one phone with its date
+  // set a year ahead would wipe everything. Leave it to admins' devices.
+  if(!isAdmin())return;
 
   // Don't hammer it on every page load
   const last=parseInt(localStorage.getItem('cmas-lastsweep')||'0',10);
@@ -3183,10 +3383,13 @@ async function runRetentionSweep(){
       }
     });
 
-    // Polls created before the cutoff
+    // Polls created before the cutoff, unless it's a date poll still
+    // voting on dates that haven't passed yet
     const pollSnap=await db.ref('polls').once('value');
     pollSnap.forEach(c=>{
       const p=c.val();
+      const dates=p.type==='date'&&p.options?Object.values(p.options).map(o=>o&&o.label).filter(Boolean):[];
+      if(dates.some(d=>d>=cutoffKey))return;
       if(p.created&&p.created<cutoffMs){
         jobs.push(db.ref('polls/'+c.key).remove());
         removed++;
@@ -3195,8 +3398,10 @@ async function runRetentionSweep(){
 
     // Orphaned chat threads whose event is long gone
     const chatSnap=await db.ref('chat').once('value');
+    // Re-read events after chat, or an event created (and chatted in) since
+    // the first read would look orphaned and lose its thread
     const liveIds=new Set();
-    evSnap.forEach(c=>liveIds.add(c.key));
+    (await db.ref('events').once('value')).forEach(c=>{liveIds.add(c.key);});
     chatSnap.forEach(c=>{
       if(!liveIds.has(c.key))jobs.push(db.ref('chat/'+c.key).remove());
     });
@@ -3401,7 +3606,46 @@ function renderEvPartPills(cur){
   c.dataset.selected=cur||'all';
 }
 
-async function saveEvent(){
+/* Run an async save at most once at a time, so a double tap (or Enter
+   pressed twice) can't write everything twice, and report failures instead
+   of leaving the sheet sitting there looking like nothing happened. */
+function oneAtATime(fn,onError){
+  let busy=false;
+  return async(...args)=>{
+    if(busy)return;
+    busy=true;
+    try{ return await fn(...args); }
+    catch(e){ onError(e); }
+    finally{ busy=false; }
+  };
+}
+
+const saveEvent=oneAtATime(writeEvent,e=>{document.getElementById('ev-err').textContent='Could not save: '+e.message;});
+
+/* Repeats are stored as 12 separate rows sharing a seriesId, written in one
+   update so a series is never left half-saved. With existingId, that event
+   becomes the first of the series and keeps its RSVPs, chat and wheel. */
+async function writeSeries(data,existingId){
+  const seriesId='s'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+  const base=parseDate(data.date);
+  const spanDays=data.endDate?Math.round((parseDate(data.endDate)-base)/86400000):0;
+  const step=data.repeat==='weekly'?7:14;
+  const updates={};
+  for(let i=0;i<12;i++){
+    const nd=data.repeat==='monthly'?addMonths(base,i):addDays(base,step*i);
+    let neKey='';
+    if(spanDays>0){const ne=addDays(nd,spanDays);neKey=dk(ne.getFullYear(),ne.getMonth(),ne.getDate());}
+    const row={...data,seriesId,date:dk(nd.getFullYear(),nd.getMonth(),nd.getDate()),endDate:neKey};
+    if(i===0&&existingId){
+      Object.entries(row).forEach(([k,v])=>{updates['events/'+existingId+'/'+k]=v;});
+    } else {
+      updates['events/'+db.ref('events').push().key]={...row,rsvps:{},created:Date.now()};
+    }
+  }
+  await db.ref().update(updates);
+}
+
+async function writeEvent(){
   const err=document.getElementById('ev-err');
   err.textContent='';
   const date=document.getElementById('ev-date').value;
@@ -3467,7 +3711,8 @@ async function saveEvent(){
     // Converting an away block into a real event
     data.rsvps={};data.created=Date.now();
     if(!data.emoji)data.emoji=guessEmoji(title);
-    await db.ref('events').push().set(data);
+    if(repeat!=='none')await writeSeries(data);
+    else await db.ref('events').push().set(data);
     await db.ref('away/'+existingAwayId).remove();
     toast('Converted to '+(evMode==='plan'?'plan':'event'));
     buzz();
@@ -3481,27 +3726,24 @@ async function saveEvent(){
     if(existing&&existing.creator!==me.name&&!isAdmin()){err.textContent='You can only edit your own events';return;}
     // Don't reassign the creator when an admin edits someone else's event
     if(existing)data.creator=existing.creator;
-    await db.ref('events/'+existingEventId).update(data);
-    toast('Updated');
+    if(existing&&existing.seriesId){
+      // Already part of a series: this edit only changes this one event, so
+      // the cadence it was created with stays as it is
+      data.repeat=existing.repeat;
+      await db.ref('events/'+existingEventId).update(data);
+      toast('Updated');
+    } else if(repeat!=='none'){
+      // Setting a repeat on a one-off used to just add a badge. Build the series.
+      await writeSeries(data,existingEventId);
+      toast('Updated, repeats ×12');
+    } else {
+      await db.ref('events/'+existingEventId).update(data);
+      toast('Updated');
+    }
   } else {
     data.rsvps={};data.created=Date.now();
     if(repeat!=='none'){
-      const seriesId='s'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-      data.seriesId=seriesId;
-      await db.ref('events').push().set(data);
-      const base=parseDate(date);
-      const spanDays=endDate?Math.round((parseDate(endDate)-base)/86400000):0;
-      const step=repeat==='weekly'?7:repeat==='fortnightly'?14:0;
-      for(let i=1;i<=11;i++){
-        let nd;
-        if(repeat==='monthly'){nd=new Date(base.getFullYear(),base.getMonth()+i,base.getDate());}
-        else{nd=addDays(base,step*i);}
-        const ndKey=dk(nd.getFullYear(),nd.getMonth(),nd.getDate());
-        let neKey='';
-        if(spanDays>0){const ne=addDays(nd,spanDays);neKey=dk(ne.getFullYear(),ne.getMonth(),ne.getDate());}
-        const copy={...data,date:ndKey,endDate:neKey,rsvps:{},created:Date.now()};
-        await db.ref('events').push().set(copy);
-      }
+      await writeSeries(data);
       toast('Added '+title+' ×12');
     } else {
       await db.ref('events').push().set(data);
@@ -3516,8 +3758,12 @@ async function saveEvent(){
 async function duplicateEvent(){
   const id=document.getElementById('ev-id').value;
   const ev=events[id];if(!ev)return;
-  const copy={...ev};delete copy.id;
-  copy.rsvps={};copy.created=Date.now();copy.creator=me.name;
+  const copy={...ev};
+  // A copy is a fresh one-off: not part of the original's series (or "delete
+  // all" would take it too), not the same imported event, no wheel result
+  ['id','seriesId','icsUid','importedFrom','wheelId','wheelResult'].forEach(k=>delete copy[k]);
+  copy.repeat='none';
+  copy.rsvps={};copy.created=Date.now();copy.updated=Date.now();copy.creator=me.name;
   await db.ref('events').push().set(copy);
   toast('Copied');closePanel('panel-event');
 }
@@ -3762,7 +4008,9 @@ async function sendChat(){
   if(!text||!detailId)return;
   input.value='';
   try{
-    await db.ref('chat/'+detailId+'/messages').push({author:me.name,text,ts:Date.now()});
+    // Server time, so a sender whose clock runs slow can't post messages that
+    // are already older than everyone's last-read mark
+    await db.ref('chat/'+detailId+'/messages').push({author:me.name,text,ts:firebase.database.ServerValue.TIMESTAMP});
     const scroller=document.getElementById('detail-scroll');
     if(scroller)requestAnimationFrame(()=>{scroller.scrollTop=scroller.scrollHeight;});
   }catch(e){
@@ -3816,7 +4064,9 @@ function addPollOptionRow(inputType,val){
   c.appendChild(row);
 }
 
-async function savePoll(){
+const savePoll=oneAtATime(writePoll,e=>{document.getElementById('poll-err').textContent='Could not save: '+e.message;});
+
+async function writePoll(){
   const id=document.getElementById('poll-id').value;
   const title=document.getElementById('poll-title').value.trim();
   const type=document.getElementById('poll-type').value;
@@ -4095,7 +4345,7 @@ const WHEEL_SPIN_MS=4200;
 /* Uniform integer in [0,n). Uses the CSPRNG with rejection sampling so
    there is no modulo bias, and so the result can't be predicted from the
    previous one the way a seeded Math.random sequence can. */
-function wheelPick(n){
+function randomIndex(n){
   if(window.crypto&&crypto.getRandomValues){
     const limit=Math.floor(0xFFFFFFFF/n)*n;
     const buf=new Uint32Array(1);
@@ -4166,7 +4416,7 @@ function spinWheel(){
   document.getElementById('wheel-result').textContent='';
   const canvas=document.getElementById('wheel-canvas');
 
-  const idx=wheelPick(items.length);
+  const idx=randomIndex(items.length);
   spinCanvasTo(canvas,items.length,idx);
   buzz(15);
 
@@ -4275,7 +4525,9 @@ function onQuickAddInput(){
   else box.innerHTML='<span style="color:var(--text-faint)">Press Enter to add on '+parseDate(selDate).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+'</span>';
 }
 
-async function submitQuickAdd(){
+const submitQuickAdd=oneAtATime(quickAdd,e=>toast('Could not add: '+e.message));
+
+async function quickAdd(){
   const txt=document.getElementById('quick-add').value.trim();
   if(!txt)return;
   const p=quickParsed||parseEventText(txt);
@@ -4662,6 +4914,7 @@ async function saveProfile(){
     evSnap.forEach(c=>{
       const ev=c.val();
       if(ev.creator===oldName)evUpdates['events/'+c.key+'/creator']=newName;
+      if(ev.wheelResult&&ev.wheelResult.by===oldName)evUpdates['events/'+c.key+'/wheelResult/by']=newName;
       if(ev.rsvps&&ev.rsvps[oldName]!==undefined){
         evUpdates['events/'+c.key+'/rsvps/'+newName]=ev.rsvps[oldName];
         evUpdates['events/'+c.key+'/rsvps/'+oldName]=null;
@@ -4716,7 +4969,17 @@ async function saveProfile(){
     });
     if(Object.keys(pollUpdates).length)await db.ref().update(pollUpdates);
 
-    // 6. Wheels: creator
+    // 6. Away blocks: whose they are, and who converted them
+    const awSnap=await db.ref('away').once('value');
+    const awUpdates={};
+    awSnap.forEach(c=>{
+      const a=c.val();
+      if(a.person===oldName)awUpdates['away/'+c.key+'/person']=newName;
+      if(a.convertedBy===oldName)awUpdates['away/'+c.key+'/convertedBy']=newName;
+    });
+    if(Object.keys(awUpdates).length)await db.ref().update(awUpdates);
+
+    // 6b. Wheels: creator
     const whSnap=await db.ref('wheels').once('value');
     const whUpdates={};
     whSnap.forEach(c=>{ if(c.val().creator===oldName)whUpdates['wheels/'+c.key+'/creator']=newName; });
@@ -4767,9 +5030,10 @@ async function saveProfile(){
 }
 
 async function signOut(){
-  const ok=await appConfirm('Sign out on this device? You\'ll need your recovery code to get back in.',{okText:'Sign out',danger:true});
+  const ok=await appConfirm('Sign out on this device? You\'ll need the access code and your recovery code to get back in.',{okText:'Sign out',danger:true});
   if(!ok)return;
   try{await db.ref('presence/'+sessionId).remove();}catch(e){}
+  try{ if(authUid)await db.ref('members/'+authUid).remove(); }catch(e){}
   // Drop this device's uid from the account so it isn't left claimed
   try{ if(authUid)await db.ref('users/'+encKey(me.name)+'/uids/'+authUid).remove(); }catch(e){}
   try{await firebase.auth().signOut();}catch(e){}
@@ -4918,28 +5182,35 @@ async function spinEventWheel(eid){
   if(btn){btn.disabled=true;btn.textContent='Spinning...';}
   const cv=document.getElementById('ev-wheel-canvas');
 
-  const idx=wheelPick(items.length);
+  const idx=randomIndex(items.length);
   const finalDeg=spinCanvasTo(cv,items.length,idx);
   const winner=items[idx];
   buzz(15);
 
   onSpinEnd(cv,async()=>{
-
-    // Save the result so everyone sees it
-    await db.ref('events/'+eid+'/wheelResult').set({
-      result:winner, by:me.name, ts:Date.now(), angle:finalDeg, wheelName:w.name
-    });
-    // Post to the event chat so it shows up in the thread
-    await db.ref('chat/'+eid+'/messages').push({
-      author:me.name, text:'🎡 Spun "'+w.name+'" → '+winner, ts:Date.now(), system:true
-    });
-
-    evWheelSpinning=false;
+    let saved=false;
+    try{
+      // Save the result so everyone sees it
+      await db.ref('events/'+eid+'/wheelResult').set({
+        result:winner, by:me.name, ts:Date.now(), angle:finalDeg, wheelName:w.name
+      });
+      // Post to the event chat so it shows up in the thread
+      await db.ref('chat/'+eid+'/messages').push({
+        author:me.name, text:'🎡 Spun "'+w.name+'" → '+winner, ts:firebase.database.ServerValue.TIMESTAMP, system:true
+      });
+      saved=true;
+    }catch(e){
+      toast('Could not save the result');
+    }finally{
+      // Always release the lock, or one failed write leaves the wheel stuck
+      evWheelSpinning=false;
+    }
     // The events listener fired while we were still spinning, so it skipped
     // the repaint. Redraw now that the flag is clear, or the panel keeps
     // showing "Not spun yet" next to a freshly spun wheel.
     if(detailId===eid)renderDetailWheel(eid);
     if(btn){btn.disabled=false;btn.textContent='Spin again';}
+    if(!saved)return;
     buzz(30);chime('win');
     toast('🎉 '+winner);
   });
@@ -4981,11 +5252,9 @@ function icsUnfold(text){
 }
 
 function icsUnescape(v){
+  // One pass, so an escaped backslash followed by "n" isn't read as a newline
   return String(v||'')
-    .replace(/\\n/gi,' ')
-    .replace(/\\,/g,',')
-    .replace(/\;/g,';')
-    .replace(/\\\\/g,'\\')
+    .replace(/\\([\\nN,;])/g,(m,c)=>c==='n'||c==='N'?' ':c)
     .trim();
 }
 
@@ -5366,6 +5635,25 @@ function renderProfileCard(){
   document.getElementById('s-name').textContent=me.name;
   document.getElementById('s-role').textContent=isAdmin()?'Admin':'Member';
   document.getElementById('s-code').textContent=appCfg.accessCode;
+  document.getElementById('s-code-btn').classList.toggle('hidden',!isAdmin());
+}
+
+/* Only affects people joining from now on: anyone already in stays in */
+async function changeAccessCode(){
+  if(!isAdmin())return;
+  const code=await appPrompt('New access code (8+ characters). People already in the group stay signed in; only new joiners need it.',appCfg.accessCode);
+  if(code===null)return;
+  const c=code.trim();
+  if(c.length<8){await appAlert('The code needs at least 8 characters.');return;}
+  if(c===appCfg.accessCode)return;
+  try{
+    await db.ref('config/accessCode').set(c);
+    appCfg.accessCode=c;
+    renderProfileCard();
+    buzz();toast('Access code changed');
+  }catch(e){
+    await appAlert('Could not change the code: '+e.message);
+  }
 }
 
 function isAdmin(){ return me && me.admin === true; }
@@ -5415,7 +5703,7 @@ function renderMembers(){
     if(isAdmin()&&!isSelf&&!u.admin){
       actions+=`<button class="btn btn-sm btn-secondary" onclick="adminPromote('${escJs(u.name)}')" title="Make admin" style="padding:5px 8px">👑</button>`;
     }
-    card.innerHTML=`<div class="profile-avatar" style="background:${u.color};width:34px;height:34px;font-size:13px">${initials(u.name)}</div><div class="user-card-info"><div class="user-card-name">${esc(u.name)} ${adminBadge}</div><div class="user-card-meta">Joined ${joined}</div></div><div class="user-card-actions">${actions}</div>`;
+    card.innerHTML=`<div class="profile-avatar" style="background:${u.color};width:34px;height:34px;font-size:13px">${esc(initials(u.name))}</div><div class="user-card-info"><div class="user-card-name">${esc(u.name)} ${adminBadge}</div><div class="user-card-meta">Joined ${joined}</div></div><div class="user-card-actions">${actions}</div>`;
     list.appendChild(card);
   });
 }
@@ -5448,12 +5736,20 @@ async function adminRemoveUser(name){
   if(!isAdmin())return;
   const yes=await appConfirm('Remove '+name+'? This deletes their account and all their events.',{okText:'Remove',danger:true});
   if(!yes)return;
+  const u=users[name]||{};
+  // Revoke their devices first, so they can't keep writing while the rest goes
+  const revoke={};
+  Object.keys(u.uids||{}).forEach(uid=>{revoke['members/'+uid]=null;});
+  if(Object.keys(revoke).length)await db.ref().update(revoke).catch(()=>{});
   // Remove user
   await db.ref('users/'+encKey(name)).remove();
-  // Remove their events
+  // Remove their events and those events' chat, plus their away blocks
   Object.values(events).forEach(ev=>{
-    if(ev.creator===name)db.ref('events/'+ev.id).remove();
+    if(ev.creator===name){db.ref('events/'+ev.id).remove();db.ref('chat/'+ev.id).remove();}
+    else if(ev.rsvps&&ev.rsvps[name]!==undefined)db.ref('events/'+ev.id+'/rsvps/'+name).remove();
   });
+  Object.values(away).forEach(a=>{ if(a.person===name)db.ref('away/'+a.id).remove(); });
+  Object.values(polls).forEach(p=>{ if(p.votes&&p.votes[name])db.ref('polls/'+p.id+'/votes/'+name).remove(); });
   // Remove from groups
   Object.values(groups).forEach(g=>{
     const newMembers={};let idx=0;
